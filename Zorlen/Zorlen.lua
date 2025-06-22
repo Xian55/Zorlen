@@ -1,11 +1,11 @@
 
 
-local TOC_FBN = 689
+local TOC_FBN = 700
 
 local Druid_FBN = 688
 local Hunter_FBN = 688
 local Mage_FBN = 687
-local Paladin_FBN = 688
+local Paladin_FBN = 700
 local Priest_FBN = 688
 local Rogue_FBN = 688
 local Shaman_FBN = 684
@@ -25,6 +25,8 @@ local Localization_FBN = 687
 Zorlen_MaxPlayerLevel = 60
 Zorlen_MaxDebuffSlots = 16
 
+
+Zorlen_Helpful = "HELPFUL";
 
 -- Make sure that all the build numbers listed above are always the same as they are listed inside of the corresponding files
 
@@ -733,7 +735,7 @@ function Zorlen_OnLoad()
 	SLASH_ZorlenClearA2 = "/Zorlencleara"
 	SLASH_ZorlenClearA3 = "/Zclearassist"
 	SLASH_ZorlenClearA4 = "/Zcleara"
-	Zorlen_debug(zorlen_startup_message, 1)
+	Zorlen_debug(zorlen_startup_message.." "..zorlen_version, 1)
 end
 
 
@@ -2936,6 +2938,37 @@ function Zorlen_GiveBuffIndex(buff, unit, castable, SpellName)
 	return nil
 end
 
+function Zorlen_GiveBuffIndex2(buff, unit, _, SpellName)
+	local u = unit or "player"
+	local counter = 1
+
+	while true do
+		local texture = UnitBuff(u, counter)
+		if not texture then
+			break
+		end
+
+		if SpellName then
+			ZORLEN_Buff_Tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+			ZORLEN_Buff_Tooltip:SetUnitBuff(u, counter)
+			local name = ZORLEN_Buff_TooltipTextLeft1:GetText()
+			if name and string.find(name, SpellName) then
+				return counter
+			end
+		elseif buff then
+			if string.find(texture, buff) then
+				return counter
+			end
+		else
+			return counter
+		end
+
+		counter = counter + 1
+	end
+
+	return nil
+end
+
 
 --Loops through all debuffs looking for a match
 function Zorlen_checkDebuff(debuff, unit, dispelable, SpellName, SpellToolTipLineTwo)
@@ -2977,6 +3010,29 @@ function Zorlen_checkBuffByName(SpellName, unit, castable, buff)
 	return Zorlen_checkBuff(buff, unit, castable, SpellName)
 end
 
+
+function Zorlen_checkBuffByOnlyName(name)
+	if not name then return false end
+
+	for i = 0, 15 do
+		local index = GetPlayerBuff(i, Zorlen_Helpful)
+		if index ~= -1 then
+			local buffName = Zorlen_buffName(index)
+			if buffName and buffName == name then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function Zorlen_buffName(index)
+	ZORLEN_Buff_Tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+	ZORLEN_Buff_Tooltip:SetPlayerBuff(index)
+	return ZORLEN_Buff_TooltipTextLeft1:GetText()
+end
+
+
 function Zorlen_checkMainHandItemBuffByName(SpellName)
 	return Zorlen_checkBuffByName(SpellName, "MainHandSlot")
 end
@@ -3012,11 +3068,68 @@ function Zorlen_GetDebuffStack(debuff, unit, dispelable, SpellName, SpellToolTip
 	return 0
 end
 
-function Zorlen_GetDebuffStackByName(SpellName, unit, SpellToolTipLineTwo, dispelable, debuff)
-	return Zorlen_GetDebuffStack(debuff, unit, dispelable, SpellName, SpellToolTipLineTwo)
+-- Returns the amount of times a buffs is stacked on the player or units, and returns 0 if the buff is not on the target.
+function Zorlen_GetBuffCount(buff, unit, castable, SpellName)
+	local u = unit or "player"
+	local index = Zorlen_GiveBuffIndex(buff, u, castable, SpellName)
+	if index == nil then
+		return 0
+	end
+
+	ZORLEN_Buff_Tooltip:SetUnitBuff(u, index)
+	local lines = ZORLEN_Buff_Tooltip:NumLines()
+
+	-- skip first line
+	for line=2, lines do
+		local lt = getglobal("ZORLEN_Buff_TooltipTextLeft"..line)
+		local lefttext = lt:GetText()
+		local _, _, stackText = string.find(lefttext, "(%d+)")
+		return tonumber(stackText) or 0
+	end
+
+	return 0
+end
+
+-- Returns the amount of times a buffs is stacked on the player or units, and returns 0 if the buff is not on the target.
+function Zorlen_GetBuffTimeLeft(buff, unit, castable, SpellName)
+	local u = unit or "player"
+	local index = Zorlen_GiveBuffIndex2(buff, u, castable, SpellName)
+	if index == nil then
+		return 0
+	end
+
+	local internalIndex = GetPlayerBuff(index - 1, Zorlen_Helpful)
+	if internalIndex == -1 then
+		return 0
+	end
+
+	local duration = GetPlayerBuffTimeLeft(internalIndex)
+	return duration or 0
+end
+
+function Zorlen_GetBuffTimeLeft_ByExactName(buffName)
+	for i = 0, 15 do
+		local internalIndex = GetPlayerBuff(i, Zorlen_Helpful)
+		if internalIndex == -1 then
+			return 0
+		end
+
+		ZORLEN_Buff_Tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+		ZORLEN_Buff_Tooltip:SetPlayerBuff(internalIndex)
+
+		local name = ZORLEN_Buff_TooltipTextLeft1:GetText()
+		if name == buffName then
+			return GetPlayerBuffTimeLeft(internalIndex) or 0
+		end
+	end
+
+	return 0
 end
 
 
+function Zorlen_GetDebuffStackByName(SpellName, unit, SpellToolTipLineTwo, dispelable, debuff)
+	return Zorlen_GetDebuffStack(debuff, unit, dispelable, SpellName, SpellToolTipLineTwo)
+end
 
 
 function Zorlen_isBreakOnDamageCC(unit, dispelable)

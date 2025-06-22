@@ -486,4 +486,9 @@ end
 Zorlen_TargetEnemyTotem = Zorlen_TargetTotem
 zTargetTotem = Zorlen_TargetTotem
 
-
+function castPerception()
+	local z = {}
+	z.SpellName = LOCALIZATION_ZORLEN.Perception
+	z.EnemyTargetNotNeeded = 1
+	return Zorlen_CastCommonRegisteredSpell(z)
+end

@@ -1,12 +1,11 @@
-## X-TocFileBuildNumber: 689
-## Version: 4.28
+## X-TocFileBuildNumber: 700
+## Version: 5.0
 ## Interface: 11200
 ## Title: Zorlen
-## Author: Marcus S. Zarra / BigRedBrent http://dzrealms.com
-## Notes: Functions to reduce macro sizes and avoid character limits in macros.
+## Author: Marcus S. Zarra / BigRedBrent / Xii
+## Notes: Functions to reduce macro sizes and avoid character limits in macros. Now includes support for Turtle WoW custom spells.
 ## OptionalDeps: myAddOns
 ## X-Category: MYADDONS_CATEGORY_OTHERS
 ## X-OptionsFrame: ZorlenOptionsFrame
-## X-Website: http://dzrealms.com
 ## SavedVariables: ZorlenConfig
 Zorlen.xml

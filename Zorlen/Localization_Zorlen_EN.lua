@@ -7,7 +7,7 @@ Zorlen_EN_FileBuildNumber = 687
 -- http://www.utf8-chartable.de/unicode-utf8-table.pl?start=128&number=1024&utf8=dec
 -- http://home.tiscali.nl/t876506/utf8tbl.html
 -- http://www.allegro-c.de/unicode/zcodes.htm
--- You will need to use the UTF-8 decimal numbers with a back slash in front of them in the same way that Å is represented by: \195\133
+-- You will need to use the UTF-8 decimal numbers with a back slash in front of them in the same way that ï¿½ is represented by: \195\133
 
 
 -- To lower the upkeep we will not be adding Localization for english words that do not break compatibility in other game clients.
@@ -557,6 +557,10 @@ LOCALIZATION_ZORLEN = {}
 	LOCALIZATION_ZORLEN["SummonCharger"] = "Summon Charger"
 	LOCALIZATION_ZORLEN["SummonWarhorse"] = "Summon Warhorse"
 	LOCALIZATION_ZORLEN["TurnUndead"] = "Turn Undead"
+	LOCALIZATION_ZORLEN["Redoubt"] = "Redoubt"
+	LOCALIZATION_ZORLEN["Zeal"] = "Zeal"
+	LOCALIZATION_ZORLEN["CrusaderStrike"] = "Crusader Strike"
+	LOCALIZATION_ZORLEN["HolyStrike"] = "Holy Strike"
 
 
 
