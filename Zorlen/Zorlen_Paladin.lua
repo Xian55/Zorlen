@@ -150,6 +150,7 @@ function isGreaterBlessingActive()
 	return isGBoKA() or isGBoLA() or isGBoMA() or isGBoSalA() or isGBoSanA() or isGBoWA()
 end
 
+-- Returns true if any blessing is active
 function isBlessingActive()
 	return isRegularBlessingActive() or isGreaterBlessingActive()
 end
@@ -174,7 +175,7 @@ function ZealTimeLeft()
 	return Zorlen_GetBuffTimeLeft_ByExactName(SpellName)
 end
 
--- Judgement has unique logic (only cast if a seal is active)
+-- Casts judgement if a seal is active
 function castJudgement(test)
 	if not isSealActive() then
 		return false
