@@ -527,6 +527,8 @@ Zorlen_Timer.RunFunction = {}
 Zorlen_LocalizedPlayerClass, Zorlen_PlayerClass = UnitClass("player")
 Zorlen_LocalizedPlayerRace, Zorlen_PlayerRace = UnitRace("player")
 
+local Zorlen_MaxBuffCount = 32
+
 local Zorlen_EatItemName = ""
 local Zorlen_EatBagID = nil
 local Zorlen_EatSlotID = nil
@@ -654,6 +656,19 @@ elseif (Zorlen_PlayerRace == "Troll") then
 	Zorlen_isCurrentRaceTroll = 1
 end
 
+-- Buff cache and last update timestamp
+local Zorlen_BuffCache = {
+  buffs = {},
+  lastUpdate = 0,
+  lastAuraChange = 0,
+  previousDurations = {}
+}
+
+-- Hook aura change events to record timestamp
+function Zorlen_AuraUpdateEvent()
+  	Zorlen_BuffCache.lastAuraChange = GetTime()
+end
+
 
 function Zorlen_OnLoad()
 	ZorlenFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -688,6 +703,7 @@ function Zorlen_OnLoad()
 	ZorlenFrame:RegisterEvent("UNIT_INVENTORY_CHANGED")
 	ZorlenFrame:RegisterEvent("LEARNED_SPELL_IN_TAB")
 	ZorlenFrame:RegisterEvent("CHAT_MSG_COMBAT_HOSTILE_DEATH")
+	ZorlenFrame:RegisterEvent("UNIT_AURA")
 	SlashCmdList["Zorlen"] = Zorlen_SlashHandler
 	SLASH_Zorlen1 = "/Zorlen"
 	SLASH_Zorlen2 = "/Zfl"
@@ -1777,7 +1793,14 @@ function Zorlen_OnEvent(event, arg1, arg2, arg3)
 			Zorlen_DebuffTimer_OnEvent_CHAT_MSG_COMBAT_HOSTILE_DEATH(arg1, arg2, arg3)
 			
 			--------------------------------------------------------------------------------------------------------
+	elseif (event == ("UNIT_AURA")) then
+			---------------------------
+			if( arg1 == "player" or arg1 == "pet") then
+				Zorlen_AuraUpdateEvent()
+			end
+			--------------------------------------------------------------------------------------------------------
 	end
+
 end
 
 
@@ -3014,13 +3037,13 @@ end
 function Zorlen_checkBuffByOnlyName(name)
 	if not name then return false end
 
-	for i = 0, 15 do
+	for i = 0, Zorlen_MaxBuffCount do
 		local index = GetPlayerBuff(i, Zorlen_Helpful)
-		if index ~= -1 then
-			local buffName = Zorlen_buffName(index)
-			if buffName and buffName == name then
-				return true
-			end
+		if index == -1 then break end
+
+		local buffName = Zorlen_buffName(index)
+		if buffName and buffName == name then
+			return true
 		end
 	end
 	return false
@@ -3108,22 +3131,7 @@ function Zorlen_GetBuffTimeLeft(buff, unit, castable, SpellName)
 end
 
 function Zorlen_GetBuffTimeLeft_ByExactName(buffName)
-	for i = 0, 15 do
-		local internalIndex = GetPlayerBuff(i, Zorlen_Helpful)
-		if internalIndex == -1 then
-			return 0
-		end
-
-		ZORLEN_Buff_Tooltip:SetOwner(UIParent, "ANCHOR_NONE")
-		ZORLEN_Buff_Tooltip:SetPlayerBuff(internalIndex)
-
-		local name = ZORLEN_Buff_TooltipTextLeft1:GetText()
-		if name == buffName then
-			return GetPlayerBuffTimeLeft(internalIndex) or 0
-		end
-	end
-
-	return 0
+	return Zorlen_GetBuffDuration(buffName)
 end
 
 
@@ -6452,3 +6460,125 @@ function Zorlen_CountNearestActiveEnemys(cycles, TargetingYouOnly)
 end
 
 
+
+-- Update and cache buffs (name and texture)
+local function Zorlen_UpdateBuffCache()
+  if not Zorlen_BuffCache.buffs then
+    Zorlen_BuffCache.buffs = {}
+  else
+    table.wipe(Zorlen_BuffCache.buffs)
+  end
+  if not Zorlen_BuffCache.previousDurations then
+    Zorlen_BuffCache.previousDurations = {}
+  end
+
+  local buffs = Zorlen_BuffCache.buffs
+  local prevDurations = Zorlen_BuffCache.previousDurations
+
+  for i = 0, Zorlen_MaxBuffCount do
+    local index = GetPlayerBuff(i, "HELPFUL")
+    if index == -1 then break end
+
+	ZORLEN_Buff_Tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+	ZORLEN_Buff_Tooltip:SetPlayerBuff(index)
+	local name = ZORLEN_Buff_TooltipTextLeft1:GetText()
+	local texture = GetPlayerBuffTexture(index)
+	local duration = GetPlayerBuffTimeLeft(index)
+
+	if name then
+		local prevDuration = prevDurations[name]
+		if prevDuration and duration and duration > prevDuration then
+			Zorlen_debug(string.format("Buff '%s' duration increased: %s → %s", name, prevDuration, duration), 1)
+		elseif not prevDuration then
+			Zorlen_debug(string.format("Buff '%s' applied with duration %s", name, duration), 1)
+		end
+
+		-- Save to cache and update previous duration
+		buffs[name] = {
+			index = index,
+			texture = texture,
+			duration = duration
+		}
+		prevDurations[name] = duration
+	end
+  end
+
+  Zorlen_BuffCache.lastUpdate = GetTime()
+end
+
+
+-- Read from cache if no new aura change
+local function Zorlen_EnsureBuffCache()
+  if Zorlen_BuffCache.lastUpdate < Zorlen_BuffCache.lastAuraChange then
+    Zorlen_UpdateBuffCache()
+  end
+end
+
+-- Public function to check if buff is active by localized name
+function Zorlen_IsBuffActive(buffName)
+  Zorlen_EnsureBuffCache()
+  return Zorlen_BuffCache.buffs[buffName] ~= nil
+end
+
+-- Public function to get remaining duration (or 0)
+function Zorlen_GetBuffDuration(buffName)
+  Zorlen_EnsureBuffCache()
+  local buff = Zorlen_BuffCache.buffs[buffName]
+  if buff and buff.duration and Zorlen_BuffCache.lastUpdate then
+    local elapsed = GetTime() - Zorlen_BuffCache.lastUpdate
+    local remaining = buff.duration - elapsed
+    -- return remaining > 0 and floor(remaining + 0.5) or 0
+	return remaining > 0 and remaining or 0
+  end
+  return 0
+end
+
+-- Function to check by alias
+function Zorlen_IsAliasBuffActive(aliasKey)
+  local localized = LOCALIZATION_ZORLEN[aliasKey]
+  --print("Checking alias buff: " .. aliasKey .. " -> " .. (localized or "nil"))
+  return localized and Zorlen_IsBuffActive(localized)
+end
+
+-- Function to get duration by alias
+function Zorlen_GetAliasBuffDuration(aliasKey)
+  local localized = LOCALIZATION_ZORLEN[aliasKey]
+  return localized and Zorlen_GetBuffDuration(localized) or 0
+end
+
+
+function Zorlen_PrintAuraCache()
+	if not Zorlen_BuffCache or not Zorlen_BuffCache.buffs then
+		Zorlen_debug("Buff cache is not initialized.", 1)
+		return
+	end
+
+	Zorlen_debug("=== Cached Buffs ===", 1)
+	for name, data in pairs(Zorlen_BuffCache.buffs) do
+		local index = data.index or "nil"
+		local texture = data.texture or "nil"
+		local duration = data.duration or "nil"
+
+		local line = string.format("name='%s', index=%s, texture='%s', duration=%s",
+			tostring(name),
+			tostring(index),
+			tostring(texture),
+			tostring(duration)
+		)
+		Zorlen_debug(line, 1)
+	end
+
+	Zorlen_debug(string.format("Last updated: %.2f seconds ago", GetTime() - (Zorlen_BuffCache.lastUpdate or 0)), 1)
+end
+
+
+-- Example test function for Blessing of Might
+function Test_BlessingOfMightActive()
+  local active = Zorlen_IsAliasBuffActive("BlessingOfMight")
+  local duration = Zorlen_GetAliasBuffDuration("BlessingOfMight")
+  if active then
+    DEFAULT_CHAT_FRAME:AddMessage("Blessing of Might is active. Duration left: " .. duration .. "s")
+  else
+    DEFAULT_CHAT_FRAME:AddMessage("Blessing of Might is NOT active.")
+  end
+end
