@@ -820,3 +820,9 @@ if GetLocale() ~= "zhTW" then return end
 	--LOCALIZATION_ZORLEN["FaultyWarGolem"] = ""
 	--LOCALIZATION_ZORLEN["TemperedWarGolem"] = ""
 	--LOCALIZATION_ZORLEN["RagereaverGolem"] = ""
+
+-- Resources
+	LOCALIZATION_ZORLEN["Mana"] = "Mana"
+	LOCALIZATION_ZORLEN["Rage"] = "Rage"
+	LOCALIZATION_ZORLEN["Energy"] = "Energy"
+	LOCALIZATION_ZORLEN["Focus"] = "Focus"

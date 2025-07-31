@@ -824,3 +824,9 @@ LOCALIZATION_ZORLEN = {}
 	LOCALIZATION_ZORLEN["FaultyWarGolem"] = "Faulty War Golem"
 	LOCALIZATION_ZORLEN["TemperedWarGolem"] = "Tempered War Golem"
 	LOCALIZATION_ZORLEN["RagereaverGolem"] = "Ragereaver Golem"
+
+-- Resources
+	LOCALIZATION_ZORLEN["Mana"] = "Mana"
+	LOCALIZATION_ZORLEN["Rage"] = "Rage"
+	LOCALIZATION_ZORLEN["Energy"] = "Energy"
+	LOCALIZATION_ZORLEN["Focus"] = "Focus"

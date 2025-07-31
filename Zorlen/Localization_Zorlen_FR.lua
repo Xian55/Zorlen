@@ -820,3 +820,9 @@ if GetLocale() ~= "frFR" then return end
 	LOCALIZATION_ZORLEN["FaultyWarGolem"] = "Golem de guerre d\195\169faillant"
 	LOCALIZATION_ZORLEN["TemperedWarGolem"] = "Golem de guerre"
 	LOCALIZATION_ZORLEN["RagereaverGolem"] = "Golem ravageur enrag\195\169"
+	
+-- Resources
+	LOCALIZATION_ZORLEN["Mana"] = "Mana"
+	LOCALIZATION_ZORLEN["Rage"] = "Rage"
+	LOCALIZATION_ZORLEN["Energy"] = "Energy"
+	LOCALIZATION_ZORLEN["Focus"] = "Focus"
