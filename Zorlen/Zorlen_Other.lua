@@ -1,5 +1,5 @@
 
-Zorlen_Other_FileBuildNumber = 687
+Zorlen_Other_FileBuildNumber = 688
 
 --[[
   Zorlen Library - Started by Marcus S. Zarra
@@ -455,6 +455,13 @@ function isShootActive()
 	return false
 end
 
+function zTargetExists()
+	return UnitExists("target")
+end
+
+function zTargetsMe()
+	return UnitExists("target") and UnitIsUnit("targettarget", "player")
+end
 
 
 function Zorlen_TargetTotem()

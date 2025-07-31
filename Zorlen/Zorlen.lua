@@ -12,8 +12,8 @@ local Shaman_FBN = 684
 local Warlock_FBN = 687
 local Warrior_FBN = 688
 
-local Other_FBN = 687
-local Pets_FBN = 683
+local Other_FBN = 688
+local Pets_FBN = 684
 
 local ImmuneMobList_FBN = 683
 local XML_FBN = 687
