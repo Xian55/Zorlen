@@ -1,5 +1,4 @@
-
-Zorlen_Hunter_FileBuildNumber = 688
+Zorlen_Hunter_FileBuildNumber = 689
 
 --[[
   Zorlen Library - Started by Marcus S. Zarra
@@ -154,7 +153,7 @@ Zorlen_Hunter_FileBuildNumber = 688
 
   3.0.0  Rewrite by Wynn (Bleeding Hollow), break units into class functions.
   		Moved Hunter specific functions from Zorlen.lua
-		castHawk() refactored to use existing isHawkActive function		  
+		castHawk() refactored to use existing isHawkActive function		
 		castSerpent() refactored to use existing isSerpent function
 		castViper() refactored to use existing usesMana and isViper()
 		castScorpid() refactored to use existing isScorpid function
@@ -195,13 +194,62 @@ function isWyvern(unit, dispelable)
 	return Zorlen_checkDebuff("INV_Spear_02", unit, dispelable)
 end
 
-
-
 --------   All functions below this line will only load if you are playing the corresponding class   --------
 if not Zorlen_isCurrentClassHunter then return end
 
 
+-- Config
+local MELEE_WINDOW = 1.0 -- seconds after last contact we consider "in melee"
 
+-- State
+local lastPetMeleeTime = 0
+
+-- Listen for pet contact (outgoing)
+local f = CreateFrame("Frame")
+f:RegisterEvent("UNIT_COMBAT")
+f:RegisterEvent("CHAT_MSG_COMBAT_PET_HITS")
+f:RegisterEvent("CHAT_MSG_COMBAT_PET_MISSES")
+f:RegisterEvent("CHAT_MSG_SPELL_PET_DAMAGE") -- Claw/Bite/Smack/etc.
+f:SetScript("OnEvent", function(_, event, unit, action)
+	if event == "UNIT_COMBAT" then
+		if unit ~= "pet" then return end
+		-- Any melee contact outcome counts as "in range"
+		if action == "WOUND" or action == "MISS" or action == "DODGE" or action == "PARRY" or action == "BLOCK" then
+			lastPetMeleeTime = GetTime()
+		end
+	else
+		-- Pet combat chat events are only for YOUR pet in vanilla
+		lastPetMeleeTime = GetTime()
+	end
+end)
+
+local function PetRecentlyInMelee(window)
+	window = window or MELEE_WINDOW
+	return (GetTime() - lastPetMeleeTime) < window
+end
+
+function castKillCommand(window)
+	local SpellButton = Zorlen_Button[LOCALIZATION_ZORLEN.KillCommand]
+	if not SpellButton then
+		Zorlen_debug(LOCALIZATION_ZORLEN.KillCommand .. "not found on any of the action bars!")
+		return false
+	end
+
+	if not Zorlen_IsSpellKnown(LOCALIZATION_ZORLEN.KillCommand) then
+		return false
+	end
+
+	local isUsable, notEnoughMana = IsUsableAction(SpellButton)
+	local _, duration, _ = GetActionCooldown(SpellButton)
+	local isCurrent = IsCurrentAction(SpellButton)
+
+	if (( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and not ( isCurrent == 1 )) and PetRecentlyInMelee(window) then
+		CastSpellByName(LOCALIZATION_ZORLEN.KillCommand)
+		return true
+	end
+
+	return false
+end
 
 function Zorlen_Hunter_SpellTimerSet()
 	local Number = 0
@@ -209,25 +257,20 @@ function Zorlen_Hunter_SpellTimerSet()
 	local SpellName = Zorlen_CastingSpellName
 	local DebuffName = nil
 	local DebuffTargetName = nil
-	
+
 	if SpellName == LOCALIZATION_ZORLEN.SerpentSting then
 		Number = 15
-		
 	elseif SpellName == LOCALIZATION_ZORLEN.ViperSting then
 		Number = 8
-		
 	elseif SpellName == LOCALIZATION_ZORLEN.ScorpidSting then
 		Number = 20
-		
 	elseif SpellName == LOCALIZATION_ZORLEN.WyvernSting then
 		Number = 26
-		
 	elseif SpellName == LOCALIZATION_ZORLEN.ScareBeast then
 		DebuffName = SpellName
 		Number = 5 + (Zorlen_CastingSpellRank * 5)
-		
 	end
-	
+
 	Zorlen_SetTimer(1, DebuffName, DebuffTargetName, "InternalZorlenSpellCastDelay", 2)
 	if Zorlen_CastingSpellTargetName then
 		Zorlen_SetTimer(Number, SpellName, TargetName, "InternalZorlenSpellTimers", nil, nil, 1)
@@ -238,11 +281,11 @@ function Zorlen_Hunter_AfterPreSpellCancelTimers(Name, Pre, Tag)
 	if Tag == "InternalZorlenSpellTimers" then
 		if
 			Name == LOCALIZATION_ZORLEN.SerpentSting
-			 or
+			or
 			Name == LOCALIZATION_ZORLEN.ViperSting
-			 or
+			or
 			Name == LOCALIZATION_ZORLEN.ScorpidSting
-			 or
+			or
 			Name == LOCALIZATION_ZORLEN.WyvernSting
 		then
 			if Name ~= LOCALIZATION_ZORLEN.SerpentSting then
@@ -261,23 +304,36 @@ function Zorlen_Hunter_AfterPreSpellCancelTimers(Name, Pre, Tag)
 	end
 end
 
-
-
 function Zorlen_Hunter_MakeMacros()
-	Zorlen_MakeMacro("z Mend Pet", "/script if not needPet()then castOverMend()end--CastSpellByName(\""..LOCALIZATION_ZORLEN.MendPet.."("..LOCALIZATION_ZORLEN.Rank.." 1)\")", 1, "Ability_Hunter_MendPet", nil, nil, 1)
-	Zorlen_MakeMacro("z FreezingTrap", "/script castFreezingTrapWithPetPassive()--CastSpellByName(\""..LOCALIZATION_ZORLEN.FreezingTrap.."\")", 1, "Spell_Frost_ChainsOfIce", nil, nil, 1)
-	Zorlen_MakeMacro("z FrostTrap", "/script castFrostTrap()--CastSpellByName(\""..LOCALIZATION_ZORLEN.FrostTrap.."\")", 1, "Spell_Frost_FreezingBreath", nil, nil, 1)
-	Zorlen_MakeMacro("z ExplosiveTrap", "/script castExplosiveTrap()--CastSpellByName(\""..LOCALIZATION_ZORLEN.ExplosiveTrap.."\")", 1, "Spell_Fire_SelfDestruct", nil, nil, 1)
-	Zorlen_MakeMacro("z ImmolationTrap", "/script castImmolationTrap()--CastSpellByName(\""..LOCALIZATION_ZORLEN.ImmolationTrap.."\")", 1, "Spell_Fire_FlameShock", nil, nil, 1)
-	Zorlen_MakeMacro("z Call Pet", "/script castCallAndDismissPet()--CastSpellByName(\""..LOCALIZATION_ZORLEN.CallPet.."\")", 1, "Ability_Hunter_BeastCall", nil, nil, 1)
-	Zorlen_MakeMacro("z Shot Rotation", "/script local a=Zorlen_TargetIsActiveEnemy()if a or Zorlen_isEnemyPlayer()then if a then castAutoShot()end if not a or not castSting()then castShotRotation()end else Zorlen_TargetActiveEnemyOnly()end--CastSpellByName(\""..LOCALIZATION_ZORLEN.AimedShot.."\")", 1, "Ability_SearingArrow", nil, nil, 1)
-	Zorlen_MakeMacro("z Wyvern Sting", "/script castWyvernSting()--CastSpellByName(\""..LOCALIZATION_ZORLEN.WyvernSting.."\")", 1, "Ability_Rogue_DualWeild", nil, nil, 1)
+	Zorlen_MakeMacro("z Mend Pet",
+		"/script if not needPet()then castOverMend()end--CastSpellByName(\"" ..
+		LOCALIZATION_ZORLEN.MendPet .. "(" .. LOCALIZATION_ZORLEN.Rank .. " 1)\")", 1, "Ability_Hunter_MendPet", nil, nil,
+		1)
+	Zorlen_MakeMacro("z FreezingTrap",
+		"/script castFreezingTrapWithPetPassive()--CastSpellByName(\"" .. LOCALIZATION_ZORLEN.FreezingTrap .. "\")", 1,
+		"Spell_Frost_ChainsOfIce", nil, nil, 1)
+	Zorlen_MakeMacro("z FrostTrap", "/script castFrostTrap()--CastSpellByName(\"" .. LOCALIZATION_ZORLEN.FrostTrap ..
+	"\")", 1, "Spell_Frost_FreezingBreath", nil, nil, 1)
+	Zorlen_MakeMacro("z ExplosiveTrap",
+		"/script castExplosiveTrap()--CastSpellByName(\"" .. LOCALIZATION_ZORLEN.ExplosiveTrap .. "\")", 1,
+		"Spell_Fire_SelfDestruct", nil, nil, 1)
+	Zorlen_MakeMacro("z ImmolationTrap",
+		"/script castImmolationTrap()--CastSpellByName(\"" .. LOCALIZATION_ZORLEN.ImmolationTrap .. "\")", 1,
+		"Spell_Fire_FlameShock", nil, nil, 1)
+	Zorlen_MakeMacro("z Call Pet",
+		"/script castCallAndDismissPet()--CastSpellByName(\"" .. LOCALIZATION_ZORLEN.CallPet .. "\")", 1,
+		"Ability_Hunter_BeastCall", nil, nil, 1)
+	Zorlen_MakeMacro("z Shot Rotation",
+		"/script local a=Zorlen_TargetIsActiveEnemy()if a or Zorlen_isEnemyPlayer()then if a then castAutoShot()end if not a or not castSting()then castShotRotation()end else Zorlen_TargetActiveEnemyOnly()end--CastSpellByName(\"" ..
+		LOCALIZATION_ZORLEN.AimedShot .. "\")", 1, "Ability_SearingArrow", nil, nil, 1)
+	Zorlen_MakeMacro("z Wyvern Sting",
+		"/script castWyvernSting()--CastSpellByName(\"" .. LOCALIZATION_ZORLEN.WyvernSting .. "\")", 1,
+		"Ability_Rogue_DualWeild", nil, nil, 1)
 end
-
 
 function Zorlen_CheckForWingClipDebuffWindow_timer_function()
 	if not isClipped() then
-		Zorlen_debug("Target is immune to "..LOCALIZATION_ZORLEN.WingClip.."!")
+		Zorlen_debug("Target is immune to " .. LOCALIZATION_ZORLEN.WingClip .. "!")
 		Zorlen_WasWingClipSpellCastImmune = 1
 		Zorlen_SetTimer(7, LOCALIZATION_ZORLEN.WingClip, "immune", "InternalZorlenMiscTimer")
 	end
@@ -297,10 +353,9 @@ function Zorlen_Hunter_OnUpdate()
 	end
 end
 
-
 function Zorlen_Hunter_OnEvent_CHAT_MSG_COMBAT_CREATURE_VS_SELF_MISSES(arg1, arg2, arg3)
 	if string.find(arg1, LOCALIZATION_ZORLEN.You_dodge) then
-		Zorlen_debug("You dodged an attack. Cast "..LOCALIZATION_ZORLEN.MongooseBite.." now!")
+		Zorlen_debug("You dodged an attack. Cast " .. LOCALIZATION_ZORLEN.MongooseBite .. " now!")
 		if not ZorlenInitialized then
 			Zorlen_CheckVariables()
 		elseif (not ZorlenConfig[ZORLEN_ZPN][ZORLEN_ZDS]) then
@@ -308,7 +363,6 @@ function Zorlen_Hunter_OnEvent_CHAT_MSG_COMBAT_CREATURE_VS_SELF_MISSES(arg1, arg
 		end
 	end
 end
-
 
 function Zorlen_Hunter_OnEvent_PLAYER_TARGET_CHANGED()
 	Zorlen_WasWingClipSpellCastImmune = nil
@@ -326,36 +380,35 @@ function Zorlen_Hunter_OnEvent_PLAYER_TARGET_CHANGED()
 	end
 end
 
-
 function Zorlen_Hunter_OnEvent_CHAT_MSG_SPELL_SELF_DAMAGE(arg1, arg2, arg3, TargetName, failed, immune, hit)
 	if not immune and not failed and hit and string.find(arg1, Zorlen_gsub(LOCALIZATION_ZORLEN.HitsOrCritsArray[hit], "%(%.%+%)", LOCALIZATION_ZORLEN.WingClip, "%(%.%*%)", TargetName)) then
-		Zorlen_SetTimer(1, "CheckForWingClipDebuffWindow_timer", nil, "InternalZorlenMiscTimer", 2, Zorlen_CheckForWingClipDebuffWindow_timer_function)
+		Zorlen_SetTimer(1, "CheckForWingClipDebuffWindow_timer", nil, "InternalZorlenMiscTimer", 2,
+			Zorlen_CheckForWingClipDebuffWindow_timer_function)
 	elseif not immune then
 		return
 	elseif string.find(arg1, Zorlen_gsub(LOCALIZATION_ZORLEN.ImmuneArray[immune], "%(%.%+%)", LOCALIZATION_ZORLEN.WingClip, "%(%.%*%)", TargetName)) then
-		Zorlen_debug("Target is immune to "..LOCALIZATION_ZORLEN.WingClip.."!")
+		Zorlen_debug("Target is immune to " .. LOCALIZATION_ZORLEN.WingClip .. "!")
 		Zorlen_WasWingClipSpellCastImmune = 1
 		Zorlen_SetTimer(7, LOCALIZATION_ZORLEN.WingClip, "immune", "InternalZorlenMiscTimer")
 	elseif string.find(arg1, Zorlen_gsub(LOCALIZATION_ZORLEN.ImmuneArray[immune], "%(%.%+%)", LOCALIZATION_ZORLEN.ConcussiveShot, "%(%.%*%)", TargetName)) then
-		Zorlen_debug("Target is immune to "..LOCALIZATION_ZORLEN.ConcussiveShot.."!")
+		Zorlen_debug("Target is immune to " .. LOCALIZATION_ZORLEN.ConcussiveShot .. "!")
 		Zorlen_WasConcussiveShotSpellCastImmune = 1
 		Zorlen_SetTimer(10, LOCALIZATION_ZORLEN.ConcussiveShot, "immune", "InternalZorlenMiscTimer")
 	elseif string.find(arg1, Zorlen_gsub(LOCALIZATION_ZORLEN.ImmuneArray[immune], "%(%.%+%)", LOCALIZATION_ZORLEN.ViperSting, "%(%.%*%)", TargetName)) then
-		Zorlen_debug("Target is immune to "..LOCALIZATION_ZORLEN.ViperSting.."!")
+		Zorlen_debug("Target is immune to " .. LOCALIZATION_ZORLEN.ViperSting .. "!")
 		Zorlen_WasViperStingSpellCastImmune = 1
 		Zorlen_SetTimer(10, LOCALIZATION_ZORLEN.ViperSting, "immune", "InternalZorlenMiscTimer")
 	elseif string.find(arg1, Zorlen_gsub(LOCALIZATION_ZORLEN.ImmuneArray[immune], "%(%.%+%)", LOCALIZATION_ZORLEN.SerpentSting, "%(%.%*%)", TargetName)) then
-		Zorlen_debug("Target is immune to "..LOCALIZATION_ZORLEN.SerpentSting.."!")
+		Zorlen_debug("Target is immune to " .. LOCALIZATION_ZORLEN.SerpentSting .. "!")
 		Zorlen_SerpentStingSpellCastImmune = 1
 	elseif string.find(arg1, Zorlen_gsub(LOCALIZATION_ZORLEN.ImmuneArray[immune], "%(%.%+%)", LOCALIZATION_ZORLEN.ScorpidSting, "%(%.%*%)", TargetName)) then
-		Zorlen_debug("Target is immune to "..LOCALIZATION_ZORLEN.ScorpidSting.."!")
+		Zorlen_debug("Target is immune to " .. LOCALIZATION_ZORLEN.ScorpidSting .. "!")
 		Zorlen_ScorpidStingSpellCastImmune = 1
 	elseif string.find(arg1, Zorlen_gsub(LOCALIZATION_ZORLEN.ImmuneArray[immune], "%(%.%+%)", LOCALIZATION_ZORLEN.HuntersMark, "%(%.%*%)", TargetName)) then
-		Zorlen_debug("Target is immune to "..LOCALIZATION_ZORLEN.HuntersMark.."!")
+		Zorlen_debug("Target is immune to " .. LOCALIZATION_ZORLEN.HuntersMark .. "!")
 		Zorlen_HuntersMarkSpellCastImmune = 1
 	end
 end
-
 
 function Zorlen_Hunter_OnEvent_UI_ERROR_MESSAGE(arg1, arg2, arg3)
 	if string.find(arg1, LOCALIZATION_ZORLEN.pet_is_not_dead) then
@@ -368,8 +421,6 @@ function Zorlen_Hunter_OnEvent_UI_ERROR_MESSAGE(arg1, arg2, arg3)
 		ZorlenConfig[ZORLEN_ZPN][ZORLEN_PETISDEAD] = true
 	end
 end
-
-
 
 function castShotRotationWithoutMulti()
 	return castShotRotation("nomulti")
@@ -414,7 +465,6 @@ function castShotRotation(mode)
 	return false
 end
 
-
 function castAutoShot()
 	if not Zorlen_isCastingOrChanneling() and Zorlen_isEnemy() and not isAutoShotActive() then
 		CastSpellByName(LOCALIZATION_ZORLEN.AutoShot)
@@ -436,18 +486,17 @@ function isAutoShotActive()
 	local SpellButton = Zorlen_Button[SpellName]
 	if SpellButton then
 		local isAutoRepeating = IsAutoRepeatAction(SpellButton)
-		if ( isAutoRepeating == 1 ) then
+		if (isAutoRepeating == 1) then
 			return true
 		end
 	else
-		Zorlen_debug(""..SpellName.." was not found on any of the action bars!")
+		Zorlen_debug("" .. SpellName .. " was not found on any of the action bars!")
 		if Zorlen_AutoShoot then
 			return true
 		end
 	end
 	return false
 end
-
 
 --Returns true if you are not in combat and can place a trap
 function canTrap()
@@ -460,17 +509,17 @@ end
 --Returns true if any Aspect is active
 function isAspectActive()
 	if
-	isHawkActive()
-	or
-	isMonkActive()
-	or
-	isCheetahActive()
-	or
-	isBeastActive()
-	or
-	isWildActive()
-	or
-	isPackActive()
+		isHawkActive()
+		or
+		isMonkActive()
+		or
+		isCheetahActive()
+		or
+		isBeastActive()
+		or
+		isWildActive()
+		or
+		isPackActive()
 	then
 		return true
 	end
@@ -480,13 +529,13 @@ end
 --Returns true if Aspect of the Wild is active
 function isWildActive()
 	if
-	not isHawkActive()
-	and
-	not isMonkActive()
-	and
-	not isCheetahActive()
-	and
-	not isBeastActive()
+		not isHawkActive()
+		and
+		not isMonkActive()
+		and
+		not isCheetahActive()
+		and
+		not isBeastActive()
 	then
 		return Zorlen_checkBuff("Spell_Nature_ProtectionformNature")
 	end
@@ -511,7 +560,7 @@ end
 --Returns true if Aspect of the Cheetah is active
 function isCheetahActive()
 	return Zorlen_checkBuff("Ability_Mount_JungleTiger")
---  return Zorlen_checkBuff("JungleTiger")
+	--  return Zorlen_checkBuff("JungleTiger")
 end
 
 --Returns true if Aspect of the Cheetah is active
@@ -519,19 +568,17 @@ function isPackActive()
 	local SpellName = LOCALIZATION_ZORLEN.AspectOfThePack
 	if
 		not isHawkActive()
-		 and
+		and
 		not isMonkActive()
-		 and
+		and
 		not isCheetahActive()
-		 and
+		and
 		not isBeastActive()
 	then
 		return Zorlen_checkBuffByName(SpellName)
 	end
 	return false
 end
-
-
 
 --Returns true if Trueshot Aura is active
 function isTrueshotActive(HasDuration)
@@ -547,18 +594,17 @@ function isSerpent(unit, dispelable)
 	return false
 end
 
-
 function isStung(unit, dispelable)
 	local u = unit or "target"
 	local Name = UnitName(u)
 	if
-	(Zorlen_IsTimer(LOCALIZATION_ZORLEN.SerpentSting, Name, "InternalZorlenSpellTimers") and Zorlen_checkDebuff("Ability_Hunter_Quickshot", unit, dispelable))
-	 or
-	(Zorlen_IsTimer(LOCALIZATION_ZORLEN.ScorpidSting, Name, "InternalZorlenSpellTimers") and Zorlen_checkDebuff("Ability_Hunter_CriticalShot", unit, dispelable))
-	 or
-	(Zorlen_IsTimer(LOCALIZATION_ZORLEN.ViperSting, Name, "InternalZorlenSpellTimers") and Zorlen_checkDebuff("Ability_Hunter_AimedShot", unit, dispelable))
-	 or
-	(Zorlen_IsTimer(LOCALIZATION_ZORLEN.WyvernSting, Name, "InternalZorlenSpellTimers") and Zorlen_checkDebuff("INV_Spear_02", unit, dispelable))
+		(Zorlen_IsTimer(LOCALIZATION_ZORLEN.SerpentSting, Name, "InternalZorlenSpellTimers") and Zorlen_checkDebuff("Ability_Hunter_Quickshot", unit, dispelable))
+		or
+		(Zorlen_IsTimer(LOCALIZATION_ZORLEN.ScorpidSting, Name, "InternalZorlenSpellTimers") and Zorlen_checkDebuff("Ability_Hunter_CriticalShot", unit, dispelable))
+		or
+		(Zorlen_IsTimer(LOCALIZATION_ZORLEN.ViperSting, Name, "InternalZorlenSpellTimers") and Zorlen_checkDebuff("Ability_Hunter_AimedShot", unit, dispelable))
+		or
+		(Zorlen_IsTimer(LOCALIZATION_ZORLEN.WyvernSting, Name, "InternalZorlenSpellTimers") and Zorlen_checkDebuff("INV_Spear_02", unit, dispelable))
 	then
 		return true
 	end
@@ -584,8 +630,6 @@ end
 function isRapidActive()
 	return Zorlen_checkBuff("RunningShot")
 end
-
-
 
 function castSting()
 	if not isStung() then
@@ -628,7 +672,8 @@ function castScareBeast(SpellRank)
 		end
 	end
 	local StopCasting = DebuffCheck
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, nil, nil, nil, nil, nil, nil, nil, DebuffCheckIncluded, DebuffCheck, nil, nil, nil, nil, nil, nil, nil, nil, StopCasting)
+	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, nil, nil, nil, nil, nil, nil, nil, DebuffCheckIncluded,
+		DebuffCheck, nil, nil, nil, nil, nil, nil, nil, nil, StopCasting)
 end
 
 --Wynn 12/27/05 - Refactor to use existing active check
@@ -638,7 +683,8 @@ function castSerpent(SpellRank)
 	local DebuffName = SpellName
 	local DebuffImmune = Zorlen_SerpentStingSpellCastImmune
 	local DebuffTimer = 1
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName, DebuffImmune, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, DebuffTimer)
+	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName, DebuffImmune, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, DebuffTimer)
 end
 
 --Wynn 12/27/05 - Refactor to use existing usesMana and isViper checks
@@ -648,7 +694,8 @@ function castViper(SpellRank)
 	local DebuffName = SpellName
 	local DebuffImmune = Zorlen_IsTimer(SpellName, "immune", "InternalZorlenMiscTimer")
 	local TargetThatUsesManaNeeded = 1
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName, DebuffImmune, nil, nil, nil, nil, TargetThatUsesManaNeeded)
+	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName, DebuffImmune, nil, nil, nil, nil,
+		TargetThatUsesManaNeeded)
 end
 
 --Wynn 12/27/05 - Refactor to use existing active check
@@ -670,19 +717,19 @@ function castMong(SpellRank)
 	local m = { 30, 40, 50, 65 }
 	local q = 0
 	local FeignSpellName = LOCALIZATION_ZORLEN.FeignDeath
-	if Zorlen_Button[FeignSpellName..".Any"] or Zorlen_IsSpellKnown(FeignSpellName) then
+	if Zorlen_Button[FeignSpellName .. ".Any"] or Zorlen_IsSpellKnown(FeignSpellName) then
 		q = 80
 	end
 	if q == 0 then
 		return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName)
 	elseif SpellRank then
-		if (mana >= (m[r] + q )) or (health == 0) then
+		if (mana >= (m[r] + q)) or (health == 0) then
 			return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName)
 		end
 	else
 		for i = 4, 1, -1 do
 			if r == i then
-				if (mana >= (m[i] + q )) or (health == 0) then
+				if (mana >= (m[i] + q)) or (health == 0) then
 					return Zorlen_CastCommonRegisteredSpell(nil, SpellName)
 				end
 				break
@@ -719,19 +766,19 @@ function castRaptor(SpellRank)
 	local m = { 15, 25, 35, 45, 55, 70, 85, 100 }
 	local q = 0
 	local FeignSpellName = LOCALIZATION_ZORLEN.FeignDeath
-	if Zorlen_Button[FeignSpellName..".Any"] or Zorlen_IsSpellKnown(FeignSpellName) then
+	if Zorlen_Button[FeignSpellName .. ".Any"] or Zorlen_IsSpellKnown(FeignSpellName) then
 		q = 80
 	end
 	if q == 0 then
 		return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName)
 	elseif SpellRank then
-		if (mana >= (m[r] + q )) or (health == 0) then
+		if (mana >= (m[r] + q)) or (health == 0) then
 			return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName)
 		end
 	else
 		for i = 8, 1, -1 do
 			if r == i then
-				if (mana >= (m[i] + q )) or (health == 0) then
+				if (mana >= (m[i] + q)) or (health == 0) then
 					return Zorlen_CastCommonRegisteredSpell(nil, SpellName)
 				end
 				break
@@ -760,7 +807,8 @@ function castWild()
 	local BuffCheckIncluded = 1
 	local BuffCheck = isWildActive()
 	local NoRangeCheck = 1
-	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil, BuffCheckIncluded, BuffCheck, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
+	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil,
+		BuffCheckIncluded, BuffCheck, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
 end
 
 function castBeast()
@@ -768,7 +816,8 @@ function castBeast()
 	local EnemyTargetNotNeeded = 1
 	local BuffCheckIncluded = 1
 	local BuffCheck = isBeastActive()
-	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil, BuffCheckIncluded, BuffCheck)
+	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil,
+		BuffCheckIncluded, BuffCheck)
 end
 
 function castDistract(SpellRank)
@@ -873,7 +922,8 @@ function castPack()
 	local BuffCheckIncluded = 1
 	local BuffCheck = isPackActive()
 	local NoRangeCheck = 1
-	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil, BuffCheckIncluded, BuffCheck, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
+	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil,
+		BuffCheckIncluded, BuffCheck, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
 end
 
 --If Trueshot Aura is not already active, it will cast it
@@ -883,7 +933,8 @@ function castTrueshot(HasDuration)
 	local BuffCheckIncluded = 1
 	local BuffCheck = isTrueshotActive(HasDuration)
 	local NoRangeCheck = 1
-	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil, BuffCheckIncluded, BuffCheck, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
+	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil,
+		BuffCheckIncluded, BuffCheck, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
 end
 
 function castBestialWrath()
@@ -893,8 +944,10 @@ function castBestialWrath()
 	if not (UnitHealth("pet") > 0) then
 		return false
 	end
-	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
+	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
 end
+
 castBeastialWrath = castBestialWrath
 
 function castIntimidation()
@@ -904,7 +957,8 @@ function castIntimidation()
 	if not (UnitHealth("pet") > 0) then
 		return false
 	end
-	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
+	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
 end
 
 function castRapid()
@@ -924,19 +978,19 @@ function castClip(SpellRank)
 	local m = { 40, 60, 80 }
 	local q = 0
 	local FeignSpellName = LOCALIZATION_ZORLEN.FeignDeath
-	if Zorlen_Button[FeignSpellName..".Any"] or Zorlen_IsSpellKnown(FeignSpellName) then
+	if Zorlen_Button[FeignSpellName .. ".Any"] or Zorlen_IsSpellKnown(FeignSpellName) then
 		q = 80
 	end
 	if q == 0 then
 		return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName, DebuffImmune)
 	elseif SpellRank then
-		if (mana >= (m[r] + q )) or (health == 0) then
+		if (mana >= (m[r] + q)) or (health == 0) then
 			return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName)
 		end
 	else
 		for i = 3, 1, -1 do
 			if r == i then
-				if (mana >= (m[i] + q )) or (health == 0) then
+				if (mana >= (m[i] + q)) or (health == 0) then
 					return Zorlen_CastCommonRegisteredSpell(nil, SpellName, DebuffName, DebuffImmune)
 				end
 				break
@@ -945,9 +999,6 @@ function castClip(SpellRank)
 	end
 	return false
 end
-
-
-
 
 function castWyvernStingWithPetPassive(SpellRank)
 	return castWyvernSting(SpellRank, "passive")
@@ -967,7 +1018,7 @@ function castWyvernSting(SpellRank, mode)
 	local DebuffCheckIncluded = 1
 	local DebuffCheck = Zorlen_isNoDamageCC()
 	local SpellCheckNotNeeded = 1
-	if (Zorlen_Button[FeignSpellName..".Any"] or Zorlen_IsSpellKnown(FeignSpellName)) then
+	if (Zorlen_Button[FeignSpellName .. ".Any"] or Zorlen_IsSpellKnown(FeignSpellName)) then
 		FeignSpellKnown = 1
 		FeignSpellID = Zorlen_GetSpellID(FeignSpellName, 0)
 		start, duration, enable = GetSpellCooldown(FeignSpellID, 0)
@@ -1023,9 +1074,6 @@ function castWyvernSting(SpellRank, mode)
 	return false
 end
 
-
-
-
 function castFreezingTrapWithPetPassive(SpellRank)
 	return castFreezingTrap(SpellRank, "passive")
 end
@@ -1041,7 +1089,7 @@ function castFreezingTrap(SpellRank, mode)
 	local health = UnitHealth("player")
 	local m = { 50, 75, 100 }
 	local q = 0
-	if (Zorlen_Button[FeignSpellName..".Any"] or Zorlen_IsSpellKnown(FeignSpellName)) then
+	if (Zorlen_Button[FeignSpellName .. ".Any"] or Zorlen_IsSpellKnown(FeignSpellName)) then
 		FeignSpellKnown = 1
 		FeignSpellID = Zorlen_GetSpellID(FeignSpellName, 0)
 		start, duration, enable = GetSpellCooldown(FeignSpellID, 0)
@@ -1106,7 +1154,7 @@ function castImmolationTrap(SpellRank)
 	local health = UnitHealth("player")
 	local m = { 50, 90, 135, 190, 245 }
 	local q = 0
-	if (Zorlen_Button[FeignSpellName..".Any"] or Zorlen_IsSpellKnown(FeignSpellName)) then
+	if (Zorlen_Button[FeignSpellName .. ".Any"] or Zorlen_IsSpellKnown(FeignSpellName)) then
 		FeignSpellKnown = 1
 		FeignSpellID = Zorlen_GetSpellID(FeignSpellName, 0)
 		start, duration, enable = GetSpellCooldown(FeignSpellID, 0)
@@ -1164,7 +1212,7 @@ function castFrostTrap()
 	local mana = UnitMana("player")
 	local health = UnitHealth("player")
 	local q = 0
-	if (Zorlen_Button[FeignSpellName..".Any"] or Zorlen_IsSpellKnown(FeignSpellName)) then
+	if (Zorlen_Button[FeignSpellName .. ".Any"] or Zorlen_IsSpellKnown(FeignSpellName)) then
 		FeignSpellKnown = 1
 		FeignSpellID = Zorlen_GetSpellID(FeignSpellName, 0)
 		start, duration, enable = GetSpellCooldown(FeignSpellID, 0)
@@ -1219,7 +1267,7 @@ function castExplosiveTrap(SpellRank)
 	local health = UnitHealth("player")
 	local m = { 275, 395, 520 }
 	local q = 0
-	if (Zorlen_Button[FeignSpellName..".Any"] or Zorlen_IsSpellKnown(FeignSpellName)) then
+	if (Zorlen_Button[FeignSpellName .. ".Any"] or Zorlen_IsSpellKnown(FeignSpellName)) then
 		FeignSpellKnown = 1
 		FeignSpellID = Zorlen_GetSpellID(FeignSpellName, 0)
 		start, duration, enable = GetSpellCooldown(FeignSpellID, 0)
@@ -1268,7 +1316,6 @@ function castExplosiveTrap(SpellRank)
 	return false
 end
 
-
 --Mend Pet function
 --written by Trev
 --edited by BigRedBrent
@@ -1284,7 +1331,7 @@ function castMend(mode)
 	local petdamage = petmaxhealth - pethealth
 	local q = 0
 	local FeignSpellName = LOCALIZATION_ZORLEN.FeignDeath
-	if Zorlen_Button[FeignSpellName..".Any"] or Zorlen_IsSpellKnown(FeignSpellName) then
+	if Zorlen_Button[FeignSpellName .. ".Any"] or Zorlen_IsSpellKnown(FeignSpellName) then
 		q = 80
 	end
 	local m = { 50, 90, 155, 225, 300, 385, 480 }; --table of mana costs for each rank of mend
@@ -1294,12 +1341,12 @@ function castMend(mode)
 	elseif mode == "over" then
 		d = { 0, 100, 190, 340, 515, 710, 945 }; --table of pet damage values that will "overheal" pet by one rank
 	elseif mode == "maximum" then
-		d = { 0, 0, 0, 0, 0, 0, 0 }; --pet damage values set to 0 to ensure highest level of mend used in combat
+		d = { 0, 0, 0, 0, 0, 0, 0 };             --pet damage values set to 0 to ensure highest level of mend used in combat
 	end
 	if pethealth / petmaxhealth <= 0.95 or (UnitDebuff("pet", 1) and Zorlen_HasTalent(LOCALIZATION_ZORLEN.ImprovedMendPet)) then
 		for i = 7, 1, -1 do
-			if ( (petdamage) >= d[i] ) then
-				if( mana >= (m[i] + q) ) then
+			if ((petdamage) >= d[i]) then
+				if (mana >= (m[i] + q)) then
 					if Zorlen_IsSpellKnown(SpellName, i) then
 						local CurrentChannelingSpellRank = Zorlen_ChannelingSpellRank;
 						if not CurrentChannelingSpellRank then
@@ -1307,15 +1354,17 @@ function castMend(mode)
 						end
 						if not Zorlen_isChanneling(SpellName) or ((i - CurrentChannelingSpellRank) > 1) then
 							if Zorlen_checkCooldownByName(LOCALIZATION_ZORLEN.MendPet) then
-								CastSpellByName(""..SpellName.."("..LOCALIZATION_ZORLEN.Rank.." "..i..")");
-								Zorlen_debug("Casting: "..LOCALIZATION_ZORLEN.MendPet.."("..LOCALIZATION_ZORLEN.Rank.." "..i..") on "..UnitName("pet"))
+								CastSpellByName("" .. SpellName .. "(" .. LOCALIZATION_ZORLEN.Rank .. " " .. i .. ")");
+								Zorlen_debug("Casting: " ..
+								LOCALIZATION_ZORLEN.MendPet ..
+								"(" .. LOCALIZATION_ZORLEN.Rank .. " " .. i .. ") on " .. UnitName("pet"))
 								return true;
 							end
 						end
 						return false;
 					end
 				end
-			end		
+			end
 		end
 	end
 	return false;
@@ -1369,4 +1418,3 @@ function castHunterTracking()
 	end
 	return castTrackHumanoids()
 end
-

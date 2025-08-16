@@ -247,6 +247,7 @@ LOCALIZATION_ZORLEN = {}
 	LOCALIZATION_ZORLEN["ScareBeast"] = "Scare Beast"
 	LOCALIZATION_ZORLEN["Volley"] = "Volley"
 	LOCALIZATION_ZORLEN["Intimidation"] = "Intimidation"
+	LOCALIZATION_ZORLEN["KillCommand"] = "Kill Command"
 
 
 
@@ -830,3 +831,10 @@ LOCALIZATION_ZORLEN = {}
 	LOCALIZATION_ZORLEN["Rage"] = "Rage"
 	LOCALIZATION_ZORLEN["Energy"] = "Energy"
 	LOCALIZATION_ZORLEN["Focus"] = "Focus"
+	
+	LOCALIZATION_ZORLEN["CostTable"] = {
+		["Mana"] = true,
+		["Rage"] = true,
+		["Energy"] = true,
+		["Focus"] = true
+	}

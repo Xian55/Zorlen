@@ -3,7 +3,7 @@
 local TOC_FBN = 700
 
 local Druid_FBN = 688
-local Hunter_FBN = 688
+local Hunter_FBN = 689
 local Mage_FBN = 687
 local Paladin_FBN = 700
 local Priest_FBN = 688
