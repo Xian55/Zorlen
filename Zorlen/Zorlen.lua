@@ -4448,315 +4448,158 @@ end
 -- From: Jiral
 --Edited by: BigRedBrent
 function Zorlen_InventoryScan(Healing, ShadowDamage, SpellDamage)
-	if not (Healing or ShadowDamage or SpellDamage) then
-		return
-	end
-	Zorlen_PlusHealingMin  = 0
-	Zorlen_PlusHealingMax  = 0
-	Zorlen_VariableHealing = 0
-	Zorlen_SpellDamage = 0
-	Zorlen_ShadowDamage = 0
-	local SetsWorn = {}
-	local SetName = nil
-	local counter = 1
-	local found = nil
-	local _ = nil
-	local minplus = nil
-	local maxplus = nil
-	local bonusName = nil
-	local setname = nil
-	local varplus = nil
-	for slot=0,23 do
-		if GetInventoryItemLink("player", slot) then
-			local hasItem, hasCooldown, repairCost = ZORLEN_Tooltip:SetInventoryItem("player", slot)
-			local Lines = ZORLEN_Tooltip:NumLines()
-			SetName = nil
-			--Zorlen_debug("Unit slot: "..slot.."  Total Toool Tip Lines: "..Lines, 2)
-			for line=1,Lines do
-				local lt = getglobal("ZORLEN_TooltipTextLeft"..line)
-				local lefttext = nil
-				if lt:IsShown() then
-					lefttext = lt:GetText()
-					if lefttext == "" then
-						lefttext = nil
-					end
-				end
-				if lefttext then
-					--Zorlen_debug("Unit slot: "..slot.."  Lefttext Line#"..line..": '"..lefttext.."'")
-					found, _, setname = string.find(lefttext, "^(.*) %(%d+%/%d+%)$")
-					if found then
-						SetName = setname
-						if SetsWorn[SetName] then
-						   break
-						else
-							SetsWorn[SetName] = true
-						end
-					elseif not SetName or not string.find(lefttext, "^%(%d+%) ") then
-						while true do
-							found = nil
-							_, _, minplus, maxplus, bonusName = string.find(lefttext, "^%+(%d+)%-(%d+) (.*)$")
-							if not bonusName then
-									_, _, bonusName, minplus, maxplus = string.find(lefttext, "^(.*) %+(%d+)%-(%d+)$")
-								if not bonusName then
-									_, _, minplus, bonusName = string.find(lefttext, "^%+(%d+) (.*)$")
-									if not bonusName then
-										_, _, bonusName, minplus = string.find(lefttext, "^(.*) %+(%d+)$")
-									end
-								end
-							end
-							if Healing then
-									if bonusName then
-										counter = 1
-										while LOCALIZATION_ZORLEN.HealingBonusWordsArray[counter] do
-											if LOCALIZATION_ZORLEN.HealingBonusWordsArray[counter] == bonusName then
-												minplus = tonumber(minplus)
-												if maxplus then
-													maxplus = tonumber(maxplus)
-													Zorlen_debug("Slot: "..slot.."  Healing Bonus: "..minplus.."-"..maxplus)
-												else
-													maxplus = minplus
-													Zorlen_debug("Slot: "..slot.."  Healing Bonus: "..minplus)
-												end
-												Zorlen_debug("Text: "..lefttext, 2)
-												Zorlen_PlusHealingMin = Zorlen_PlusHealingMin + minplus
-												Zorlen_PlusHealingMax = Zorlen_PlusHealingMax + maxplus
-												found = 1
-												break
-											end
-											counter = counter + 1
-										end
-										if found then
-											break
-										end
-									else
-										counter = 1
-										while LOCALIZATION_ZORLEN.HealingBonusPhraseArray[counter] do
-											found, _, varplus = string.find(lefttext, LOCALIZATION_ZORLEN.HealingBonusPhraseArray[counter])
-											if found then
-												varplus = tonumber(varplus)
-												Zorlen_debug("Slot: "..slot.."  Healing Bonus: "..varplus)
-												Zorlen_debug("Text: "..lefttext, 2)
-												Zorlen_VariableHealing = Zorlen_VariableHealing + varplus
-												break
-											end
-											counter = counter + 1
-										end
-										if found then
-											break
-										end
-									end
-							end
-							if SpellDamage or Healing or ShadowDamage then
-									if bonusName then
-										counter = 1
-										while LOCALIZATION_ZORLEN.SpellDamageAndHealingBonusWordsArray[counter] do
-											if LOCALIZATION_ZORLEN.SpellDamageAndHealingBonusWordsArray[counter] == bonusName then
-												minplus = tonumber(minplus)
-												if maxplus then
-													maxplus = tonumber(maxplus)
-													Zorlen_debug("Slot: "..slot.."  Spell and Healing Bonus: "..minplus.."-"..maxplus)
-												else
-													maxplus = minplus
-													Zorlen_debug("Slot: "..slot.."  Spell and Healing Bonus: "..minplus)
-												end
-												Zorlen_debug("Text: "..lefttext, 2)
-												if Healing then
-													Zorlen_PlusHealingMin = Zorlen_PlusHealingMin + minplus
-													Zorlen_PlusHealingMax = Zorlen_PlusHealingMax + maxplus
-												end
-												if SpellDamage then
-													Zorlen_SpellDamage = Zorlen_SpellDamage + minplus
-												end
-												if ShadowDamage then
-													Zorlen_ShadowDamage = Zorlen_ShadowDamage + minplus
-												end
-												found = 1
-												break
-											end
-											counter = counter + 1
-										end
-										if found then
-											break
-										end
-									else
-										counter = 1
-										while LOCALIZATION_ZORLEN.SpellDamageAndHealingBonusPhraseArray[counter] do
-											found, _, varplus = string.find(lefttext, LOCALIZATION_ZORLEN.SpellDamageAndHealingBonusPhraseArray[counter])
-											if found then
-												varplus = tonumber(varplus)
-												Zorlen_debug("Slot: "..slot.."  Spell and Healing Bonus: "..varplus)
-												Zorlen_debug("Text: "..lefttext, 2)
-												if Healing then
-													Zorlen_VariableHealing = Zorlen_VariableHealing + varplus
-												end
-												if SpellDamage then
-													Zorlen_SpellDamage = Zorlen_SpellDamage + varplus
-												end
-												if ShadowDamage then
-													Zorlen_ShadowDamage = Zorlen_ShadowDamage + varplus
-												end
-												break
-											end
-											counter = counter + 1
-										end
-										if found then
-											break
-										end
-									end
-							end
-							if SpellDamage or ShadowDamage then
-									if bonusName then
-										counter = 1
-										while LOCALIZATION_ZORLEN.SpellDamageBonusWordsArray[counter] do
-											if LOCALIZATION_ZORLEN.SpellDamageBonusWordsArray[counter] == bonusName then
-												minplus = tonumber(minplus)
-												if maxplus then
-													maxplus = tonumber(maxplus)
-													Zorlen_debug("Slot: "..slot.."  Spell Bonus: "..minplus.."-"..maxplus)
-												else
-													maxplus = minplus
-													Zorlen_debug("Slot: "..slot.."  Spell Bonus: "..minplus)
-												end
-												Zorlen_debug("Text: "..lefttext, 2)
-												if SpellDamage then
-													Zorlen_SpellDamage = Zorlen_SpellDamage + minplus
-												end
-												if ShadowDamage then
-													Zorlen_ShadowDamage = Zorlen_ShadowDamage + minplus
-												end
-												found = 1
-												break
-											end
-											counter = counter + 1
-										end
-										if found then
-											break
-										end
-									else
-										counter = 1
-										while LOCALIZATION_ZORLEN.SpellDamageBonusPhraseArray[counter] do
-											found, _, varplus = string.find(lefttext, LOCALIZATION_ZORLEN.SpellDamageBonusPhraseArray[counter])
-											if found then
-												varplus = tonumber(varplus)
-												Zorlen_debug("Slot: "..slot.."  Spell Bonus: "..varplus)
-												Zorlen_debug("Text: "..lefttext, 2)
-												if SpellDamage then
-													Zorlen_SpellDamage = Zorlen_SpellDamage + varplus
-												end
-												if ShadowDamage then
-													Zorlen_ShadowDamage = Zorlen_ShadowDamage + varplus
-												end
-												break
-											end
-											counter = counter + 1
-										end
-										if found then
-											break
-										end
-										if string.find(lefttext, "^"..LOCALIZATION_ZORLEN.BrilliantWizardOil) then
-											Zorlen_debug("Slot: "..slot.."  Spell Bonus: 36")
-											Zorlen_debug("Text: "..lefttext, 2)
-											if SpellDamage then
-												Zorlen_SpellDamage = Zorlen_SpellDamage + 36
-											end
-											if ShadowDamage then
-												Zorlen_ShadowDamage = Zorlen_ShadowDamage + 36
-											end
-											break
-										elseif string.find(lefttext, "^"..LOCALIZATION_ZORLEN.WizardOil) then
-											Zorlen_debug("Slot: "..slot.."  Spell Bonus: 24")
-											Zorlen_debug("Text: "..lefttext, 2)
-											if SpellDamage then
-												Zorlen_SpellDamage = Zorlen_SpellDamage + 24
-											end
-											if ShadowDamage then
-												Zorlen_ShadowDamage = Zorlen_ShadowDamage + 24
-											end
-											break
-										elseif string.find(lefttext, "^"..LOCALIZATION_ZORLEN.LesserWizardOil) then
-											Zorlen_debug("Slot: "..slot.."  Spell Bonus: 16")
-											Zorlen_debug("Text: "..lefttext, 2)
-											if SpellDamage then
-												Zorlen_SpellDamage = Zorlen_SpellDamage + 16
-											end
-											if ShadowDamage then
-												Zorlen_ShadowDamage = Zorlen_ShadowDamage + 16
-											end
-											break
-										elseif string.find(lefttext, "^"..LOCALIZATION_ZORLEN.MinorWizardOil) then
-											Zorlen_debug("Slot: "..slot.."  Spell Bonus: 8")
-											Zorlen_debug("Text: "..lefttext, 2)
-											if SpellDamage then
-												Zorlen_SpellDamage = Zorlen_SpellDamage + 8
-											end
-											if ShadowDamage then
-												Zorlen_ShadowDamage = Zorlen_ShadowDamage + 8
-											end
-											break
-										end
-									end
-							end
-							if ShadowDamage then
-									if bonusName then
-											counter = 1
-											while LOCALIZATION_ZORLEN.ShadowDamageBonusWordsArray[counter] do
-												if LOCALIZATION_ZORLEN.HealingBonusWordsArray[counter] == bonusName then
-													minplus = tonumber(minplus)
-													if maxplus then
-														maxplus = tonumber(maxplus)
-														Zorlen_debug("Slot: "..slot.."  Shadow Bonus: "..minplus.."-"..maxplus)
-													else
-														maxplus = minplus
-														Zorlen_debug("Slot: "..slot.."  Shadow Bonus: "..minplus)
-													end
-													Zorlen_debug("Text: "..lefttext, 2)
-													Zorlen_ShadowDamage = Zorlen_ShadowDamage + minplus
-													found = 1
-													break
-												end
-												counter = counter + 1
-											end
-											if found then
-												break
-											end
-									else
-										counter = 1
-										while LOCALIZATION_ZORLEN.ShadowDamageBonusPhraseArray[counter] do
-											found, _, varplus = string.find(lefttext, LOCALIZATION_ZORLEN.ShadowDamageBonusPhraseArray[counter])
-											if found then
-												varplus = tonumber(varplus)
-												Zorlen_debug("Slot: "..slot.."  Shadow Bonus: "..varplus)
-												Zorlen_debug("Text: "..lefttext, 2)
-												Zorlen_ShadowDamage = Zorlen_ShadowDamage + varplus
-												break
-											end
-											counter = counter + 1
-										end
-										if found then
-											break
-										end
-									end
-							end
-							if true then
-								break
-							end
-						end
-					end
-				end
-			end
-		end
-	end
-	Zorlen_debug("Inventory scan complete:")
-	if Healing then
-		Zorlen_debug("  Zorlen_PlusHealing: "..Zorlen_PlusHealingMin.." - "..Zorlen_PlusHealingMax)
-		Zorlen_debug("  Zorlen_VariableHealing = "..Zorlen_VariableHealing)
-	end
-	if SpellDamage then
-		Zorlen_debug("  Zorlen_SpellDamage = "..Zorlen_SpellDamage)
-	end
-	if ShadowDamage then
-		Zorlen_debug("  Zorlen_ShadowDamage = "..Zorlen_ShadowDamage)
-	end
+  if not (Healing or ShadowDamage or SpellDamage) then return end
+
+  Zorlen_PlusHealingMin, Zorlen_PlusHealingMax = 0, 0
+  Zorlen_VariableHealing = 0
+  Zorlen_SpellDamage, Zorlen_ShadowDamage = 0, 0
+
+  local needHeal, needSpell, needShadow = Healing, SpellDamage, ShadowDamage
+
+  -- hoist globals for speed
+  local Tooltip = ZORLEN_Tooltip
+  local getg = getglobal
+  local sfind = string.find
+  local smatch = string.match
+
+  local SetsWorn = {}
+
+  -- helpers (no extra tables created)
+  local function parseBonus(text)
+    -- +X-Y Name
+    local a,b,name = smatch(text, "^%+(%d+)%-(%d+)%s+(.*)$")
+    if a then return a+0, b+0, name end
+    -- Name +X-Y
+    name,a,b = smatch(text, "^(.*)%s+%+(%d+)%-(%d+)$")
+    if a then return a+0, b+0, name end
+    -- +X Name
+    a,name = smatch(text, "^%+(%d+)%s+(.*)$")
+    if a then return a+0, nil, name end
+    -- Name +X
+    name,a = smatch(text, "^(.*)%s+%+(%d+)$")
+    if a then return a+0, nil, name end
+    return nil,nil,nil
+  end
+
+  local function inArray(arr, token)
+    local i = 1
+    while arr and arr[i] do
+      if arr[i] == token then return true end
+      i = i + 1
+    end
+    return false
+  end
+
+  local function findPhraseNumber(text, phrases)
+    local i = 1
+    while phrases and phrases[i] do
+      local ok,_,num = string.find(text, phrases[i])
+      if ok and num then return num+0 end
+      i = i + 1
+    end
+    return nil
+  end
+
+  local function addHealingMinMax(minp, maxp)
+    if not minp then return end
+    Zorlen_PlusHealingMin = Zorlen_PlusHealingMin + minp
+    Zorlen_PlusHealingMax = Zorlen_PlusHealingMax + (maxp or minp)
+  end
+
+  local function addSpellAndShadow(val)
+    if needSpell then Zorlen_SpellDamage = Zorlen_SpellDamage + val end
+    if needShadow then Zorlen_ShadowDamage = Zorlen_ShadowDamage + val end
+  end
+
+  local function tryWizardOils(text)
+    if not (needSpell or needShadow) then return false end
+    if sfind(text, "^"..LOCALIZATION_ZORLEN.BrilliantWizardOil, 1, true) then addSpellAndShadow(36); return true end
+    if sfind(text, "^"..LOCALIZATION_ZORLEN.WizardOil, 1, true)         then addSpellAndShadow(24); return true end
+    if sfind(text, "^"..LOCALIZATION_ZORLEN.LesserWizardOil, 1, true)   then addSpellAndShadow(16); return true end
+    if sfind(text, "^"..LOCALIZATION_ZORLEN.MinorWizardOil, 1, true)    then addSpellAndShadow(8);  return true end
+    return false
+  end
+
+  for slot = 0, 23 do
+    if GetInventoryItemLink("player", slot) then
+      Tooltip:SetInventoryItem("player", slot)
+      local lines = Tooltip:NumLines()
+      local setNameSeen = nil
+
+      for line = 1, lines do
+        local lt = getg("ZORLEN_TooltipTextLeft"..line)
+        local text = lt and lt:GetText()
+        if text and text ~= "" then
+          -- Set header: "Set Name (n/m)"
+          local _,_,setname = sfind(text, "^(.*) %(%d+%/%d+%)$")
+          if setname then
+            setNameSeen = setname
+            if not SetsWorn[setname] then SetsWorn[setname] = true end
+          -- Skip set bonus lines "(2) ...", and do nothing further with them
+          elseif not (setNameSeen and sfind(text, "^%(%d+%)%s")) then
+            -- Fast path: only bother with “worded” parsing if there’s a '+'
+            local handled = false
+
+            if sfind(text, "+", 1, true) then
+              local minp, maxp, bonusName = parseBonus(text)
+
+              if bonusName then
+                if needHeal and inArray(LOCALIZATION_ZORLEN.HealingBonusWordsArray, bonusName) then
+                  addHealingMinMax(minp, maxp); handled = true
+                elseif (needSpell or needHeal or needShadow)
+                  and inArray(LOCALIZATION_ZORLEN.SpellDamageAndHealingBonusWordsArray, bonusName) then
+                  if needHeal then addHealingMinMax(minp, maxp) end
+                  addSpellAndShadow(minp or 0); handled = true
+                elseif (needSpell or needShadow)
+                  and inArray(LOCALIZATION_ZORLEN.SpellDamageBonusWordsArray, bonusName) then
+                  addSpellAndShadow(minp or 0); handled = true
+                elseif needShadow
+                  and inArray(LOCALIZATION_ZORLEN.ShadowDamageBonusWordsArray, bonusName) then
+                  if minp then Zorlen_ShadowDamage = Zorlen_ShadowDamage + minp end
+                  handled = true
+                end
+              end
+            end
+
+            if not handled then
+              if needHeal then
+                local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.HealingBonusPhraseArray)
+                if v then Zorlen_VariableHealing = Zorlen_VariableHealing + v; handled = true end
+              end
+
+              if not handled and (needSpell or needHeal or needShadow) then
+                local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.SpellDamageAndHealingBonusPhraseArray)
+                if v then
+                  if needHeal then Zorlen_VariableHealing = Zorlen_VariableHealing + v end
+                  addSpellAndShadow(v); handled = true
+                end
+              end
+
+              if not handled and (needSpell or needShadow) then
+                local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.SpellDamageBonusPhraseArray)
+                if v then addSpellAndShadow(v); handled = true end
+                if not handled then handled = tryWizardOils(text) end
+              end
+
+              if not handled and needShadow then
+                local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.ShadowDamageBonusPhraseArray)
+                if v then Zorlen_ShadowDamage = Zorlen_ShadowDamage + v; handled = true end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  -- Summary (optional)
+  Zorlen_debug("Inventory scan complete:")
+  if needHeal then
+    Zorlen_debug("  Zorlen_PlusHealing: "..Zorlen_PlusHealingMin.." - "..Zorlen_PlusHealingMax)
+    Zorlen_debug("  Zorlen_VariableHealing = "..Zorlen_VariableHealing)
+  end
+  if needSpell then Zorlen_debug("  Zorlen_SpellDamage = "..Zorlen_SpellDamage) end
+  if needShadow then Zorlen_debug("  Zorlen_ShadowDamage = "..Zorlen_ShadowDamage) end
 end
 
 
