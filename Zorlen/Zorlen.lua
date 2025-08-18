@@ -6,7 +6,7 @@ local Druid_FBN = 688
 local Hunter_FBN = 689
 local Mage_FBN = 687
 local Paladin_FBN = 700
-local Priest_FBN = 688
+local Priest_FBN = 690
 local Rogue_FBN = 688
 local Shaman_FBN = 684
 local Warlock_FBN = 687
@@ -2377,10 +2377,10 @@ function isDruid(unit)
 	return Zorlen_isClass("DRUID", unit)
 end
 function isHunter(unit)
-	return Zorlen_isClass("HUNTER", unit) 
+	return Zorlen_isClass("HUNTER", unit)
 end
 function isPaladin(unit)
-	return Zorlen_isClass("PALADIN", unit) 
+	return Zorlen_isClass("PALADIN", unit)
 end
 function isPriest(unit)
 	return Zorlen_isClass("PRIEST", unit) 
@@ -2451,119 +2451,79 @@ end
 
 
 function Zorlen_isCasting(SpellName, SpellRank)
-	if Zorlen_Casting then
-		if SpellName then
-			if SpellName == Zorlen_CastingSpellName then
-				if SpellRank then
-					if SpellRank == Zorlen_CastingSpellRank then
-						return true
-					end
-				else
-					return true
-				end
-			end
-		else
-			return true
-		end
-	end
-	return false
+  return Zorlen_Casting and (
+    not SpellName or (
+      SpellName == Zorlen_CastingSpellName and (
+        not SpellRank or SpellRank == Zorlen_CastingSpellRank
+      )
+    )
+  ) or false
 end
 
 
+
 function Zorlen_isChanneling(SpellName, SpellRank)
-	if Zorlen_Channeling then
-		if SpellName then
-			if SpellName == Zorlen_ChannelingSpellName then
-				if SpellRank then
-					if SpellRank == Zorlen_ChannelingSpellRank then
-						return true
-					end
-				else
-					return true
-				end
-			end
-		else
-			return true
-		end
-	end
-	return false
+  return Zorlen_Channeling and (
+    not SpellName or (
+      SpellName == Zorlen_ChannelingSpellName and (
+        not SpellRank or SpellRank == Zorlen_ChannelingSpellRank
+      )
+    )
+  ) or false
 end
 
 
 function Zorlen_isCastingOrChanneling(SpellName, SpellRank)
-	if Zorlen_isCasting(SpellName, SpellRank) or Zorlen_isChanneling(SpellName, SpellRank) then
-		return true
-	end
-	return false
+	return Zorlen_isCasting(SpellName, SpellRank) or Zorlen_isChanneling(SpellName, SpellRank)
 end
 
 --Since the PlayerFrame combat variable can be wrong, The same information
 --can be accessed here.	Returns true if you are in combat
 function Zorlen_inCombat()
-	if Zorlen_Combat then
-		return true
-	end
-	return false
+	return Zorlen_Combat
 end
 
 -- Returns true if you are not in combat, and may use abilitys that can only be used out of combat
 function Zorlen_notInCombat()
-	if Zorlen_Combat then
-		return false
-	end
-	return true
+	return not Zorlen_Combat
 end
 
 function Zorlen_inMeleeCombat()
-	if Zorlen_Melee then
-		return true
-	end
-	return false
+	return Zorlen_Melee
 end
 
 function usesMana(unit)
 	local unit = unit or "target"
-	if UnitPowerType(unit) == 0 then
-		return true
-	end
-	return false
+	return UnitPowerType(unit) == 0
 end
 
 function hasMana(unit)
 	local unit = unit or "target"
-	if UnitPowerType(unit) == 0 and UnitMana(unit) > 0 then
-		return true
-	end
-	return false
+	return UnitPowerType(unit) == 0 and UnitMana(unit) > 0
 end
 
 function Zorlen_HealthPercent(unit)
 	local unit = unit or "target"
-	local percent = (UnitHealth(unit) / UnitHealthMax(unit)) * 100
-	return percent
+	return (UnitHealth(unit) / UnitHealthMax(unit)) * 100
 end
 
 function Zorlen_HealthDamagePercent(unit)
-	local percent = 100 - Zorlen_HealthPercent(unit)
-	return percent
+	return 100 - Zorlen_HealthPercent(unit)
 end
 
 function Zorlen_HealthDamage(unit)
 	local unit = unit or "target"
-	local damage = UnitHealthMax(unit) - UnitHealth(unit)
-	return damage
+	return UnitHealthMax(unit) - UnitHealth(unit)
 end
 
 function Zorlen_ManaMissing(unit)
 	local unit = unit or "target"
-	local damage = UnitManaMax(unit) - UnitMana(unit)
-	return damage
+	return UnitManaMax(unit) - UnitMana(unit)
 end
 
 function Zorlen_ManaPercent(unit)
 	local unit = unit or "target"
-	local percent = (UnitMana(unit) / UnitManaMax(unit)) * 100
-	return percent
+	return (UnitMana(unit) / UnitManaMax(unit)) * 100
 end
 
 --Convenience function that will tell if the target is attackable
@@ -2583,54 +2543,55 @@ end
 
 --Internal function that returns the SpellID of the highest ranking spell for SpellName
 function Zorlen_GetSpellID(SpellName, SpellRank, Book)
-	local B = Book or BOOKTYPE_SPELL
-	local SpellID = nil
-	if SpellName then
-		local SpellCount = 0
-		local ReturnName = nil
-		local ReturnRank = nil
-		while SpellName ~= ReturnName do
-			SpellCount = SpellCount + 1
-			ReturnName, ReturnRank = GetSpellName(SpellCount, B)
-			if not ReturnName then
-				break
-			end
-		end
-		while SpellName == ReturnName do
-			if SpellRank then
-				if SpellRank == 0 then
-					return SpellCount
-				elseif ReturnRank and ReturnRank ~= "" then
-					local found, _, Rank = string.find(ReturnRank, "(%d+)")
-					if found then
-						ReturnRank = tonumber(Rank)
-					else
-						ReturnRank = 1
-					end
-				else
-					ReturnRank = 1
-				end
-				if SpellRank == ReturnRank then
-					return SpellCount
-				end
-			else
-				SpellID = SpellCount
-			end
-			SpellCount = SpellCount + 1
-			ReturnName, ReturnRank = GetSpellName(SpellCount, B)
-		end
-	end
-	return SpellID
+  if not SpellName then return nil end
+
+  local B = Book or BOOKTYPE_SPELL
+  local lastId = nil
+  local wantRank = (SpellRank ~= nil)
+
+  local i = 1
+  while true do
+    local name, rankText = GetSpellName(i, B)
+    if not name then break end
+
+    if name == SpellName then
+      if wantRank then
+        if SpellRank == 0 then
+          return i  -- first match
+        else
+          local r
+          if rankText and rankText ~= "" then
+            local _, _, n = string.find(rankText, "(%d+)")
+            r = n and tonumber(n) or 1
+          else
+            r = 1
+          end
+          if r == SpellRank then
+            return i
+          end
+        end
+      else
+        -- no specific rank requested: keep the latest match (highest rank)
+        lastId = i
+      end
+    end
+
+    i = i + 1
+  end
+
+  return lastId
 end
+
 
 
 function Zorlen_checkCoolThenCast(SpellID, Book)
 	local B = Book or BOOKTYPE_SPELL
-	if Zorlen_checkCooldown(SpellID, Book) then
-		CastSpell(SpellID, B)
-		return true
+	if not Zorlen_checkCooldown(SpellID, Book) then
+		return false
 	end
-	return false
+	
+	CastSpell(SpellID, B)
+	return true
 end
 
 
@@ -2641,12 +2602,15 @@ end
 
 -- Checks for spell cooldown. If cooldown has passed, a value of true is returned. If the spell is still on cool down a value of false is returned.
 function Zorlen_checkCooldown(SpellID, Book)
-	local B = Book or BOOKTYPE_SPELL
-	if SpellID then
-		if GetSpellCooldown(SpellID, B) == 0 then
-			return true
-		end
+	if not SpellID then
+		return false
 	end
+
+	local B = Book or BOOKTYPE_SPELL
+	if GetSpellCooldown(SpellID, B) == 0 then
+		return true
+	end
+
 	return false
 end
 
@@ -2659,15 +2623,16 @@ end
 -- Example: Zorlen_IsSpellKnown("Spell Name")
 -- Example above will return true if any rank of the named spell is located in your spell book.
 function Zorlen_IsSpellKnown(SpellName, SpellRank, Book)
-	if SpellRank then
-		if Zorlen_GetSpellID(SpellName, SpellRank, Book) then
-			return true
-		end
-	elseif Zorlen_GetSpellID(SpellName, 0, Book) then
-		return true
-	end
-	return false
+  if not SpellName then return false end
+
+  if SpellRank then
+    return Zorlen_GetSpellID(SpellName, SpellRank, Book) ~= nil
+  end
+
+  -- SpellRank not provided → check if any rank is known
+  return Zorlen_GetSpellID(SpellName, 0, Book) ~= nil
 end
+
 
 --function to check if a certain spell and rank are known
 -- Example: Zorlen_IsSpellRankKnown("Spell Name", 2)
@@ -2679,69 +2644,53 @@ end
 
 -- Returns the the spell rank as a number
 function Zorlen_GetSpellRank(SpellName, Book)
-	local B = Book or BOOKTYPE_SPELL
-	local rslt = 0
-	if SpellName then
-		local spell, rank
-		local i = Zorlen_GetSpellID(SpellName, nil, B)
-		if i then
-			spell, rank = GetSpellName(i, B)
-			rslt = rank
-			if rslt and rslt ~= "" then
-				local found, _, Rank = string.find(rslt, "(%d+)")
-				if found then
-					rslt = tonumber(Rank)
-				else
-					rslt = 1
-				end
-			else
-				rslt = 1
-			end
-		end
-	end
-	return rslt
+  if not SpellName then return 0 end
+
+  local B = Book or BOOKTYPE_SPELL
+  local id = Zorlen_GetSpellID(SpellName, nil, B)  -- highest known rank
+  if not id then return 0 end
+
+  local _, rankText = GetSpellName(id, B)
+  if rankText and rankText ~= "" then
+    local _, _, n = string.find(rankText, "(%d+)")
+    return n and tonumber(n) or 1
+  end
+
+  return 1
 end
 
+
 function Zorlen_HasTalent(TalentName)
-	if Zorlen_GetTalentRank(TalentName) > 0 then
-		return true
-	end
-	return false
+	return Zorlen_GetTalentRank(TalentName) > 0
 end
 
 -- Returns the the value of how many talent points that have been spent on a talent.
 -- Example: Zorlen_GetTalentRank("Talent Name") == 1
 -- Example above will return true if the named talent has only one point spent in it.
 function Zorlen_GetTalentRank(TalentName)
-	for iTab=1,GetNumTalentTabs() do
-		for iTal=1,GetNumTalents(iTab) do
-			local nameTalent , iconPath , iconX , iconY , currentRank , maxRank = GetTalentInfo( iTab, iTal )
-			if nameTalent == TalentName then
-				return currentRank 
-			end
-		end
-	end
-	return 0
+  if not TalentName then return 0 end
+  local tabs = GetNumTalentTabs()
+  for tab = 1, tabs do
+    local talents = GetNumTalents(tab)
+    for idx = 1, talents do
+      local name, _, _, _, rank = GetTalentInfo(tab, idx)
+      if name == TalentName then
+        return rank
+      end
+    end
+  end
+  return 0
 end
 
 function Zorlen_GetSpellTextureByName(SpellName, Book)
-	local B = Book or BOOKTYPE_SPELL
-	if SpellName then
-		if Zorlen_IsSpellKnown(SpellName) then
-			local SpellID = Zorlen_GetSpellID(SpellName, 0, Book)
-			local texture = GetSpellTexture(SpellID, B)
-			if texture then
-				return texture
-			end
-		end
-	end
-	return "texture was not found"
+  if not SpellName then return nil end
+  local B = Book or BOOKTYPE_SPELL
+  local id = Zorlen_GetSpellID(SpellName, 0, B)
+  return id and GetSpellTexture(id, B) or nil
 end
 
 function Zorlen_ShowSpellTextureByName(SpellName)
-	if SpellName then
-		return Zorlen_debug(Zorlen_GetSpellTextureByName(SpellName), 1)
-	end
+  return SpellName and Zorlen_debug(Zorlen_GetSpellTextureByName(SpellName), 1) or nil
 end
 
 
@@ -2753,58 +2702,42 @@ end
 
 
 
---Test function to display all debuffs on your target or a specified unit.
-function Zorlen_ShowAllDebuffs(unit)
-	local u = unit or "target"
-	if not unit and not UnitExists("target") then
-		u = "player"
-	end
-	if UnitName(u) then
-		if not UnitDebuff(u, 1) then
-			Zorlen_debug("No debuffs found for "..UnitName(u), 1)
-			return
-		end
-		Zorlen_debug("All debuffs for "..UnitName(u)..":", 1)
-		local counter = 1
-		while (UnitDebuff(u, counter)) do
-			ZORLEN_Buff_Tooltip:SetUnitDebuff(u, counter)
-			local name = ZORLEN_Buff_TooltipTextLeft1:GetText()
-			local texture = UnitDebuff(u, counter)
-			texture = string.gsub(texture, "Interface\\Icons\\", "")
-			Zorlen_debug("Debuff Slot #"..counter..":", 1)
-			Zorlen_debug("       Debuff Name:   "..name, 1)
-			Zorlen_debug("       Debuff Texture:   "..texture, 1)
-			counter = counter + 1
-		end
-	end
+local function Zorlen_ShowAllAuras(unit, auraType)
+  local u = unit or "target"
+  if not unit and not UnitExists("target") then
+    u = "player"
+  end
+  if not UnitName(u) then return end
+
+  local isBuff = (auraType == "buff")
+  local UnitAura = isBuff and UnitBuff or UnitDebuff
+  local SetTooltip = isBuff and ZORLEN_Buff_Tooltip.SetUnitBuff or ZORLEN_Buff_Tooltip.SetUnitDebuff
+  local label = isBuff and "Buff" or "Debuff"
+
+  if not UnitAura(u, 1) then
+    Zorlen_debug("No " .. label:lower() .. "s found for " .. UnitName(u), 1)
+    return
+  end
+
+  Zorlen_debug("All " .. label:lower() .. "s for " .. UnitName(u) .. ":", 1)
+
+  local counter = 1
+  while UnitAura(u, counter) do
+    SetTooltip(ZORLEN_Buff_Tooltip, u, counter)
+    local name = ZORLEN_Buff_TooltipTextLeft1:GetText()
+    local texture = UnitAura(u, counter):gsub("Interface\\Icons\\", "")
+
+    Zorlen_debug(label .. " Slot #" .. counter .. ":", 1)
+    Zorlen_debug("       " .. label .. " Name:   " .. name, 1)
+    Zorlen_debug("       " .. label .. " Texture:   " .. texture, 1)
+
+    counter = counter + 1
+  end
 end
 
-
---Test function to display all buffs on yourself or a specified unit.
-function Zorlen_ShowAllBuffs(unit)
-	local u = unit or "target"
-	if not unit and not UnitExists("target") then
-		u = "player"
-	end
-	if UnitName(u) then
-		if not UnitBuff(u, 1) then
-			Zorlen_debug("No buffs found for "..UnitName(u), 1)
-			return
-		end
-		Zorlen_debug("All buffs for "..UnitName(u)..":", 1)
-		local counter = 1
-		while (UnitBuff(u, counter)) do
-			ZORLEN_Buff_Tooltip:SetUnitBuff(u, counter)
-			local name = ZORLEN_Buff_TooltipTextLeft1:GetText()
-			local texture = UnitBuff(u, counter)
-			texture = string.gsub(texture, "Interface\\Icons\\", "")
-			Zorlen_debug("Buff Slot #"..counter..":", 1)
-			Zorlen_debug("       Buff Name:   "..name, 1)
-			Zorlen_debug("       Buff Texture:   "..texture, 1)
-			counter = counter + 1
-		end
-	end
-end
+-- convenience wrappers
+function Zorlen_ShowAllBuffs(unit)   Zorlen_ShowAllAuras(unit, "buff")   end
+function Zorlen_ShowAllDebuffs(unit) Zorlen_ShowAllAuras(unit, "debuff") end
 
 --returns true if there are 16 debuffs on the target
 function Zorlen_AllDebuffSlotsUsed(unit)
@@ -2818,34 +2751,40 @@ end
 
 --Loops through all self buffs looking for a match and returns the index number
 function Zorlen_GiveSelfBuffIndex(buff, SpellName, buffFilter, DispelType, HasDuration)
-	local counter = 0
-	while GetPlayerBuff(counter) >= 0 do
-		if not buffFilter or GetPlayerBuff(counter, buffFilter) >= 0 then
-			local index, untilCancelled = GetPlayerBuff(counter)
-			if not HasDuration or untilCancelled ~= 1 then
-				if not DispelType or DispelType == GetPlayerBuffDispelType(index) then
-					if SpellName then
-						ZORLEN_Buff_Tooltip:SetPlayerBuff(index)
-						local buffname = ZORLEN_Buff_TooltipTextLeft1:GetText()
-						if buffname then
-							if string.find(buffname, SpellName) then
-								return index
-							end
-						end
-					elseif buff then
-						if string.find(GetPlayerBuffTexture(index), buff) then
-							return index
-						end
-					else
-						return index
-					end
-				end
-			end
-		end
-		counter = counter + 1
-	end
-	return nil
+  local counter = 0
+
+  while GetPlayerBuff(counter) >= 0 do
+    local index, untilCancelled = GetPlayerBuff(counter)
+
+    -- skip if filter doesn’t match
+    if (not buffFilter or GetPlayerBuff(counter, buffFilter) >= 0) and
+       (not HasDuration or untilCancelled ~= 1) and
+       (not DispelType or DispelType == GetPlayerBuffDispelType(index)) then
+
+      if SpellName then
+        ZORLEN_Buff_Tooltip:SetPlayerBuff(index)
+        local buffname = ZORLEN_Buff_TooltipTextLeft1:GetText()
+        if buffname and string.find(buffname, SpellName) then
+          return index
+        end
+
+      elseif buff then
+        local texture = GetPlayerBuffTexture(index)
+        if texture and string.find(texture, buff) then
+          return index
+        end
+
+      else
+        return index
+      end
+    end
+
+    counter = counter + 1
+  end
+
+  return nil
 end
+
 
 function Zorlen_GiveSelfBuffIndexByName(SpellName, buffFilter, DispelType, HasDuration, buff)
 	return Zorlen_GiveSelfBuffIndex(buff, SpellName, buffFilter, DispelType, HasDuration)
@@ -2853,10 +2792,7 @@ end
 
 
 function Zorlen_checkSelfBuff(buff, SpellName, buffFilter, DispelType, HasDuration)
-	if Zorlen_GiveSelfBuffIndex(buff, SpellName, buffFilter, DispelType, HasDuration) then
-		return true
-	end
-	return false
+	return Zorlen_GiveSelfBuffIndex(buff, SpellName, buffFilter, DispelType, HasDuration)
 end
 
 function Zorlen_checkSelfBuffByName(SpellName, buffFilter, DispelType, HasDuration, buff)
@@ -2865,13 +2801,14 @@ end
 
 
 function Zorlen_CancelSelfBuff(buff, SpellName)
-	local i = Zorlen_GiveSelfBuffIndex(buff, SpellName)
-	if i then
-		CancelPlayerBuff(i)
-		return true
-	end
-	return false
+  local i = Zorlen_GiveSelfBuffIndex(buff, SpellName)
+  if not i then
+    return false
+  end
+  CancelPlayerBuff(i)
+  return true
 end
+
 
 function Zorlen_CancelSelfBuffByName(SpellName, buff)
 	return Zorlen_CancelSelfBuff(buff, SpellName)
@@ -2880,85 +2817,106 @@ end
 
 --Loops through all debuffs looking for a match and returns the index number
 function Zorlen_GiveDebuffIndex(debuff, unit, dispelable, SpellName, SpellToolTipLineTwo)
-	local u = unit or "target"
-	local d = nil
-	local counter = 1
-	if dispelable then
-		if (dispelable == 1) or (dispelable == 0) then
-			d = dispelable
-		else
-			d = 1
-		end
-	end
-	while UnitDebuff(u, counter) do
-		if UnitDebuff(u, counter, d) then
-			if SpellName then
-				ZORLEN_Buff_Tooltip:SetUnitDebuff(u, counter)
-				local debuffname = ZORLEN_Buff_TooltipTextLeft1:GetText()
-				if debuffname then
-					if string.find(debuffname, SpellName) then
-						if SpellToolTipLineTwo then
-							local debuffline2 = ZORLEN_Buff_TooltipTextLeft2:GetText() or ""
-							if string.find(debuffline2, SpellToolTipLineTwo) then
-								return counter
-							end
-							return nil
-						end
-						return counter
-					end
-				end
-			elseif debuff then
-				local debufftexture = UnitDebuff(u, counter)
-				if debufftexture then
-					if string.find(debufftexture, debuff) then
-						return counter
-					end
-				end
-			else
-				return counter
-			end
-		end
-		counter = counter + 1
-	end
-	return nil
+  local u = unit or "target"
+
+  -- normalize the optional "dispelable" flag
+  local d = (dispelable == 1 or dispelable == 0) and dispelable or (dispelable and 1 or nil)
+
+  -- prep tooltip if matching by name or tooltip line
+  if SpellName or SpellToolTipLineTwo then
+    ZORLEN_Buff_Tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+  end
+
+  local i = 1
+  while true do
+    local texture = UnitDebuff(u, i)
+    if not texture then
+      return nil
+    end
+
+    -- skip if dispelable flag requested but not matched
+    if d and not UnitDebuff(u, i, d) then
+      i = i + 1
+    elseif SpellName then
+      ZORLEN_Buff_Tooltip:ClearLines()
+      ZORLEN_Buff_Tooltip:SetUnitDebuff(u, i)
+      local name = ZORLEN_Buff_TooltipTextLeft1 and ZORLEN_Buff_TooltipTextLeft1:GetText()
+
+      if name and string.find(name, SpellName, 1, true) then
+        if SpellToolTipLineTwo then
+          local line2 = (ZORLEN_Buff_TooltipTextLeft2 and ZORLEN_Buff_TooltipTextLeft2:GetText()) or ""
+          return string.find(line2, SpellToolTipLineTwo, 1, true) and i or nil
+        end
+        return i
+      end
+
+      i = i + 1
+    elseif debuff then
+      if string.find(texture, debuff, 1, true) then
+        return i
+      end
+      i = i + 1
+    else
+      return i -- no filters, return first debuff
+    end
+  end
 end
+
+
 
 --Loops through all buffs looking for a match and returns the index number
 function Zorlen_GiveBuffIndex(buff, unit, castable, SpellName)
-	local u = unit or "player"
-	local c = nil
-	local counter = 1
-	if castable then
-		if (castable == 1) or (castable == 0) then
-			c = castable
-		else
-			c = 1
-		end
-	end
-	while UnitBuff(u, counter) do
-		if UnitBuff(u, counter, c) then
-			if SpellName then
-				ZORLEN_Buff_Tooltip:SetUnitBuff(u, counter)
-				local buffname = ZORLEN_Buff_TooltipTextLeft1:GetText()
-				if buffname then
-					if string.find(buffname, SpellName) then
-						return counter
-					end
-				end
-			elseif buff then
-				local bufftexture = UnitBuff(u, counter)
-				if bufftexture then
-					if string.find(bufftexture, buff) then
-						return counter
-					end
-				end
-			else
-				return counter
-			end
-		end
-		counter = counter + 1
-	end
-	return nil
+  local u = unit or "player"
+
+  -- normalize the optional "castable" flag to 0/1 or nil
+  local c
+  if castable ~= nil then
+    c = (castable == 1 or castable == 0) and castable or 1
+  end
+
+  -- set tooltip owner once if we're going to read names
+  if SpellName then
+    ZORLEN_Buff_Tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+  end
+
+  local i = 1
+  while true do
+    -- single existence check (unfiltered) to know when to stop
+    local texture = UnitBuff(u, i)
+    if not texture then
+      break
+    end
+
+    -- if caller requested "castable" filter, skip slots that don't match it
+    if c and not UnitBuff(u, i, c) then
+      i = i + 1
+      -- continue
+    else
+      if SpellName then
+        -- compare by buff name via tooltip (substring match, plain)
+        ZORLEN_Buff_Tooltip:ClearLines()
+        ZORLEN_Buff_Tooltip:SetUnitBuff(u, i)
+        local name = ZORLEN_Buff_TooltipTextLeft1 and ZORLEN_Buff_TooltipTextLeft1:GetText()
+        if name and string.find(name, SpellName, 1, true) then
+          return i
+        end
+
+      elseif buff then
+        -- compare by texture path (substring match, plain)
+        if texture and string.find(texture, buff, 1, true) then
+          return i
+        end
+
+      else
+        -- no filters → first buff index
+        return i
+      end
+
+      i = i + 1
+    end
+  end
+
+  return nil
 end
 
 function Zorlen_GiveBuffIndex2(buff, unit, _, SpellName)
@@ -2995,18 +2953,12 @@ end
 
 --Loops through all debuffs looking for a match
 function Zorlen_checkDebuff(debuff, unit, dispelable, SpellName, SpellToolTipLineTwo)
-	if Zorlen_GiveDebuffIndex(debuff, unit, dispelable, SpellName, SpellToolTipLineTwo) then
-		return true
-	end
-	return false
+	return Zorlen_GiveDebuffIndex(debuff, unit, dispelable, SpellName, SpellToolTipLineTwo)
 end
 
 --Loops through all buffs looking for a match
 function Zorlen_checkBuff(buff, unit, castable, SpellName)
-	if Zorlen_GiveBuffIndex(buff, unit, castable, SpellName) then
-		return true
-	end
-	return false
+	return Zorlen_GiveBuffIndex(buff, unit, castable, SpellName)
 end
 
 
@@ -3212,33 +3164,77 @@ end
 
 
 
-function Zorlen_IsUnit(unit, enemy, active, player, mob, givesxp, lessthenhealthpercent, unithasnotarget, unitistargetingyou, unitistargetingyourfriend, unitistargetingselforitsfriend)
-	local u = unit or "target"
-	if UnitExists(u) then
-		if not enemy or (UnitCanAttack("player", u) and not UnitIsCivilian(u) and (UnitHealth(u) > 0 or UnitExists(u.."target") or UnitAffectingCombat(u) or (UnitIsPlayer(u) and Zorlen_isClass("Hunter", u)))) then
-			if not active or ((UnitAffectingCombat(u) or UnitExists(u.."target") or UnitHealth(u) < UnitHealthMax(u) or UnitIsPlayer(u) or (UnitIsEnemy("player", u) and CheckInteractDistance(u, 3))) and not Zorlen_isNoDamageCC(u)) then
-				if not player or UnitIsPlayer(u) then
-					if not mob or (not UnitPlayerControlled(u) and (enemy or UnitExists(u))) then
-						if not givesxp or ((enemy or (UnitCanAttack("player", u) and not UnitIsCivilian(u) and (UnitHealth(u) > 0 or UnitExists(u.."target") or UnitAffectingCombat(u) or (UnitIsPlayer(u) and Zorlen_isClass("Hunter", u))))) and not UnitIsTrivial(u) and UnitFactionGroup(u) ~= UnitFactionGroup("player") and not UnitIsPet(u) and (UnitIsPlayer(u) or not UnitIsTapped(u) or UnitIsTappedByPlayer(u))) then
-							if not lessthenhealthpercent or Zorlen_HealthPercent(u) <= lessthenhealthpercent then
-								if not unithasnotarget or not UnitExists(u.."target") then
-									if not unitistargetingyou or UnitIsUnit(u.."target", "player") then
-										if not unitistargetingyourfriend or (not UnitIsUnit(u.."target", "player") and UnitIsFriend("player", u.."target")) then
-											if not unitistargetingselforitsfriend or UnitCanAttack("player", u.."target") then
-												return true
-											end
-										end
-									end
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-	end
-	return false
+function Zorlen_IsUnit(unit, enemy, active, player, mob, givesxp, lessthenhealthpercent,
+                       unithasnotarget, unitistargetingyou, unitistargetingyourfriend, unitistargetingselforitsfriend)
+
+  local u = unit or "target"
+  if not UnitExists(u) then
+    return false
+  end
+
+  -- enemy check
+  if enemy and not (UnitCanAttack("player", u) and not UnitIsCivilian(u) and
+                    (UnitHealth(u) > 0 or UnitExists(u.."target") or UnitAffectingCombat(u) or
+                     (UnitIsPlayer(u) and Zorlen_isClass("Hunter", u)))) then
+    return false
+  end
+
+  -- active check
+  if active and not ((UnitAffectingCombat(u) or UnitExists(u.."target") or UnitHealth(u) < UnitHealthMax(u) or
+                      UnitIsPlayer(u) or (UnitIsEnemy("player", u) and CheckInteractDistance(u, 3))) and
+                      not Zorlen_isNoDamageCC(u)) then
+    return false
+  end
+
+  -- player check
+  if player and not UnitIsPlayer(u) then
+    return false
+  end
+
+  -- mob check
+  if mob and (UnitPlayerControlled(u) or (not enemy and not UnitExists(u))) then
+    return false
+  end
+
+  -- givesxp check
+  if givesxp then
+    local enemyLike = enemy or (UnitCanAttack("player", u) and not UnitIsCivilian(u) and
+                                (UnitHealth(u) > 0 or UnitExists(u.."target") or UnitAffectingCombat(u) or
+                                 (UnitIsPlayer(u) and Zorlen_isClass("Hunter", u))))
+    if not (enemyLike and not UnitIsTrivial(u) and UnitFactionGroup(u) ~= UnitFactionGroup("player") and
+            not UnitIsPet(u) and (UnitIsPlayer(u) or not UnitIsTapped(u) or UnitIsTappedByPlayer(u))) then
+      return false
+    end
+  end
+
+  -- health %
+  if lessthenhealthpercent and Zorlen_HealthPercent(u) > lessthenhealthpercent then
+    return false
+  end
+
+  -- no target check
+  if unithasnotarget and UnitExists(u.."target") then
+    return false
+  end
+
+  -- targeting you
+  if unitistargetingyou and not UnitIsUnit(u.."target", "player") then
+    return false
+  end
+
+  -- targeting your friend
+  if unitistargetingyourfriend and (UnitIsUnit(u.."target", "player") or not UnitIsFriend("player", u.."target")) then
+    return false
+  end
+
+  -- targeting self or its friend
+  if unitistargetingselforitsfriend and not UnitCanAttack("player", u.."target") then
+    return false
+  end
+
+  return true
 end
+
 
 
 -- Will return true if your target is not a friend and is still alive.
@@ -3747,30 +3743,53 @@ zTargetEnemyRaidTargetOnly = Zorlen_TargetEnemyRaidTargetOnly
 
 
 function Zorlen_TargetNamesFromArray(TargetNamesArray, EnemyOnly, Find, DeadOrAlive)
-	if TargetNamesArray then
-		local f = true
-		if Find then
-			f = nil
-		end
-		local counter = 1
-		while TargetNamesArray[counter] do
-			local n = UnitName("target")
-			local h = UnitHealth("target")
-			if not n or n == "" or (not DeadOrAlive and h == 0) or (not Find and TargetNamesArray[counter] ~= n) or (Find and not string.find(n, TargetNamesArray[counter])) or (EnemyOnly and not Zorlen_isEnemy()) then
-				TargetByName(TargetNamesArray[counter], f)
-			end
-			local N = UnitName("target")
-			local H = UnitHealth("target")
-			if N and (DeadOrAlive or H > 0) and (Find or TargetNamesArray[counter] == N) and (not Find or string.find(N, TargetNamesArray[counter])) and (not EnemyOnly or Zorlen_isEnemy()) then
-				return true
-			elseif N ~= n or H ~= h then
-				TargetLastTarget()
-			end
-			counter = counter + 1
-		end
+	if not TargetNamesArray then
+		return false
 	end
+
+	-- f is used as the "exact match" flag for TargetByName
+	local exactMatch = not Find
+	local counter = 1
+
+	while TargetNamesArray[counter] do
+		local targetName  = UnitName("target")
+		local targetHP    = UnitHealth("target")
+		local wantedName  = TargetNamesArray[counter]
+
+		-- Conditions that mean we *don’t* have the right target yet
+		local badTarget =
+			not targetName or targetName == "" or
+			(not DeadOrAlive and targetHP == 0) or
+			(exactMatch and targetName ~= wantedName) or
+			(Find and not string.find(targetName, wantedName, 1, true)) or
+			(EnemyOnly and not Zorlen_isEnemy())
+
+		if badTarget then
+			TargetByName(wantedName, exactMatch)
+			targetName = UnitName("target")   -- re-fetch once
+			targetHP   = UnitHealth("target")
+		end
+
+		-- Check if we succeeded
+		if targetName
+			and (DeadOrAlive or targetHP > 0)
+			and (exactMatch and targetName == wantedName or (Find and string.find(targetName, wantedName, 1, true)))
+			and (not EnemyOnly or Zorlen_isEnemy())
+		then
+			return true
+		end
+
+		-- If targeting changed but didn't succeed → restore previous target
+		if targetName ~= n or targetHP ~= h then
+			TargetLastTarget()
+		end
+
+		counter = counter + 1
+	end
+
 	return false
 end
+
 zTargetNamesFromArray = Zorlen_TargetNamesFromArray
 
 
@@ -4283,170 +4302,198 @@ function Zorlen_CastHealingSpell(SpellName, ManaArray, MinHealArray, MaxHealArra
 		"standard" - Use the rank of the spell whose average healed amount will fully heal the target
 	RankAdj - Once the Mode has determined the suggested rank to use, this value (if present) is used to adjust the rank up or down
 ]]
-	if Zorlen_IsSpellKnown(SpellName) then
-		local SpellNameArray={}
-		local SpellButtonArray={}
-		local SpellRankArray={}
-
-		local SpellRanks = 1
-		repeat
-			SpellNameArray[SpellRanks] = SpellName
-			SpellButtonArray[SpellRanks] = SpellButton
-			SpellRankArray[SpellRanks] = SpellRanks
-			SpellRanks = SpellRanks + 1
-		until not ManaArray[SpellRanks]
-		return Zorlen_CastMultiNamedHealingSpell(SpellNameArray, SpellRankArray, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, unit, SpellButtonArray)
+	if not Zorlen_IsSpellKnown(SpellName) then
+		return false	-- Don't know any rank of the spell, so just exit
 	end
-	return false	-- Don't know any rank of the spell, so just exit
+
+	local SpellNameArray = {}
+	local SpellButtonArray = {}
+	local SpellRankArray = {}
+	local ManaArray = {}
+	local MinHealArray = {}
+	local MaxHealArray = {}
+	local TimeArray = {}
+	--local LevelLearnedArray = {}
+
+	local spellIds = Zorlen_SpellIdsByRankbySpellName[SpellName]
+	for rank, spellId in pairs(spellIds) do
+		local spellInfo = Zorlen_SpellInfo[spellId]
+		if spellInfo then
+			SpellNameArray[rank] = spellInfo.name
+			SpellButtonArray[rank] = spellInfo.button
+			SpellRankArray[rank] = spellInfo.rank
+			ManaArray[rank] = spellInfo.cost
+			MinHealArray[rank] = spellInfo.minVal
+			MaxHealArray[rank] = spellInfo.maxVal
+			TimeArray[rank] = spellInfo.castTime
+		end
+	end
+
+	return Zorlen_CastMultiNamedHealingSpell(SpellNameArray, SpellRankArray, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, unit, SpellButtonArray)
+
 end
 
--- From: Jiral
+------------------------------------------------------------
+-- Rank selection helpers
+------------------------------------------------------------
+local function first_meeting(dmg, arr, ranks)
+  for i = 1, ranks do
+    if dmg <= arr[i] then return i end
+  end
+  return nil
+end
+
+local function make_avg(SpellRanks, MinHealArray, MaxHealArray)
+  local avg = {}
+  for i = 1, SpellRanks do
+    avg[i] = (MinHealArray[i] + MaxHealArray[i]) * 0.5
+  end
+  return avg
+end
+
+-- Mode: "maximum", "over", "under", "standard"(default)
+local function Zorlen_SelectHealRank(TargetDamage, Mode, RankAdj, SpellRanks, MinHealArray, MaxHealArray)
+  local k
+  if Mode == "maximum" then
+    k = SpellRanks
+  elseif Mode == "over" then
+    k = first_meeting(TargetDamage, MinHealArray, SpellRanks) or SpellRanks
+  elseif Mode == "under" then
+    local overIdx = first_meeting(TargetDamage, MinHealArray, SpellRanks)
+    if overIdx then k = (overIdx > 1) and (overIdx - 1) or 1 else k = SpellRanks end
+  else
+    local avg = make_avg(SpellRanks, MinHealArray, MaxHealArray)
+    k = first_meeting(TargetDamage, avg, SpellRanks) or SpellRanks
+  end
+
+  if RankAdj then
+    k = k + RankAdj
+    if k < 1 then k = 1 elseif k > SpellRanks then k = SpellRanks end
+  end
+  return k
+end
+
+------------------------------------------------------------
+-- Cast multi-named healing spell (refactored)
+------------------------------------------------------------
 function Zorlen_CastMultiNamedHealingSpell(SpellNameArray, SpellRankArray, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, unit, SpellButtonArray)
---[[ 	SpellNameArray - This is an array of localized healing spells to cast
-	SpellRankArray - This is an array of the ranks for the associated SpellNameArray
-	ManaArray - This is an array of the mana cost for each rank of the spell.  Once the following parameters determine which rank is desired, this routine will cast the highest rank less than or equal to the chosen rank for which the caster has sufficient mana to cast
-	MinHealArray - This is an array of the minimum number of hit points healed by each rank of the spell
-	MaxHealArray - This is an array of the maximum number of hit points healed by each rank of the spell
-	Mode - This is used to determine which rank of the spell to cast:
-		"maximum" - Always use the maximum rank known
-		"over" - Use the rank of the spell whose minimum healed amount will fully heal the target
-		"under" - Use one rank less than the rank that would have been chosen by "over"
-		"standard" - Use the rank of the spell whose average healed amount will fully heal the target
-	RankAdj - Once the Mode has determined the suggested rank to use, this value (if present) is used to adjust the rank up or down
-]]
-	local CurrentCastingSpellRank = Zorlen_CastingSpellRank
-	local retarget = nil
-	local dotarget = nil
-	local SpellRanks = 1
-	while ManaArray[SpellRanks+1] do										-- Quick loop to calculate spell ranks
-		SpellRanks = SpellRanks + 1
-	end
-	for i=1,SpellRanks do
-		local castadj = 1
-		if TimeArray[i] < 3.5 then
-			if TimeArray[i] < 1.5 then
-				castadj = 1.5 / 3.5
-			else
-				castadj = TimeArray[i]/3.5
-			end
-		end
-		local leveladj = 1
-		if LevelLearnedArray[i] < 20 then
-			leveladj = 1-((20-LevelLearnedArray[i])*0.0375)
-		end	
-		MinHealArray[i] = MinHealArray[i] + math.min(Zorlen_PlusHealingMin + (Zorlen_VariableHealing * castadj * leveladj),MaxHealArray[i])
-		MaxHealArray[i] = MaxHealArray[i] + math.min(Zorlen_PlusHealingMax + (Zorlen_VariableHealing * castadj * leveladj),MaxHealArray[i])
-	end
-	local SpellTarget = unit or "target"
-	if unit then
-		if not UnitExists(unit) or UnitCanAttack("player", unit) or not UnitIsFriend(unit, "player") or not (UnitHealth(unit) > 0) or not UnitIsVisible(unit) or UnitIsDeadOrGhost(unit) then
-			return false
-		end
-		if not UnitIsUnit("target", unit) and UnitIsFriend("target", "player") then
-			dotarget = 1
-		end
-	elseif not UnitExists("target") or UnitCanAttack("player", "target") or not UnitIsFriend("target", "player") or not (UnitHealth("target") > 0) or not UnitIsVisible("target") or UnitIsDeadOrGhost("target") or UnitIsUnit("target", "player") then
-		SpellTarget = "player"
-	end
-	local TargetMaxHealth = UnitHealthMax(SpellTarget)
-	local TargetDamage = UnitHealthMax(SpellTarget) - UnitHealth(SpellTarget)
-	if TargetDamage == 0 then
-		return false							-- Notheing to heal, so don't waste the time/mana
-	end
-	local DamageArray = {}
-	if Mode=="maximum" or SpellTarget=="target" then						-- If requesting maximum heal or healing out-of-group
-		for i=1,SpellRanks do					 							-- 	Force rank to be max known
-			DamageArray[i]=0
-		end
-	elseif Mode=="over" then												-- If requesting overheal
-		for i=1,SpellRanks do												-- 	Assume heal will only heal minimum amount
-			DamageArray[i]=MinHealArray[i]
-		end
-	elseif (not (UnitAffectingCombat(SpellTarget) or Mode=="standard")) or Mode == "under" then	-- If target not in combat or requesting underheal
-		for i=1,SpellRanks do												--	Don't heal more then minimum of next rank
-			DamageArray[i]=MinHealArray[i+1] or 999999
-		end
-	else																	-- If none of the above
-		for i=1,SpellRanks do												--	Assume heal will heal average amount
-			DamageArray[i]=(MinHealArray[i]+MaxHealArray[i])/2
-		end
-	end
-	DamageArray[SpellRanks] = TargetDamage									-- Assume final rank will fully heal target
-	for i=1,SpellRanks do
-		if TargetDamage <= DamageArray[i] then
-			local k = i
-			if RankAdj then
-				k = k + RankAdj
-				if k < 1 then
-					k = 1
-				elseif k > SpellRanks then
-					k = SpellRanks
-				end
-			end
-			for j = k,1,-1 do
-				if UnitMana("player") >= ManaArray[j] then
-					if Zorlen_IsSpellKnown(SpellNameArray[j]) then
-						if Zorlen_IsSpellKnown(SpellNameArray[j], SpellRankArray[j]) then
-							if not CurrentCastingSpellRank then
-								CurrentCastingSpellRank = 0
-							end
-							if not Zorlen_isCasting(SpellNameArray[j]) or ((SpellRankArray[j] - CurrentCastingSpellRank) > 1) or ((CurrentCastingSpellRank - SpellRankArray[j]) > 1) then
-								if Zorlen_isCasting() then
-									SpellStopCasting()
-									Zorlen_debug("Stopping current cast to cast: "..SpellNameArray[j].."("..LOCALIZATION_ZORLEN.Rank.." "..SpellRankArray[j]..") on "..SpellTarget.." ("..UnitName(SpellTarget)..")")
-								else
-									if dotarget then
-										TargetUnit(unit)
-										retarget = 1
-									end
-									if SpellButtonArray[j] then
-										if UnitIsUnit(SpellTarget, "target") then
-											local inRange = IsActionInRange(SpellButtonArray[j])
-											local hasRange = ActionHasRange(SpellButtonArray[j])
-											if hasRange then
-												if inRange ~= 1 then
-													return false
-												end
-											end
-										end
-										local isUsable = IsUsableAction(SpellButtonArray[j])
-										local _, duration = GetActionCooldown(SpellButtonArray[j])
-										local isCurrent = IsCurrentAction(SpellButtonArray[j])
-										if isUsable ~= 1 or duration ~= 0 or isCurrent == 1 then
-											return false
-										end
-									elseif not Zorlen_checkCooldownByName(SpellNameArray[j]) then
-										return false
-									end
-									Zorlen_CastingUnit = SpellTarget
-									local SpellTargetName = UnitName(SpellTarget)
-									CastSpellByName(SpellNameArray[j].."("..LOCALIZATION_ZORLEN.Rank.." "..SpellRankArray[j]..")")
-									Zorlen_debug("Casting: "..SpellNameArray[j].."("..LOCALIZATION_ZORLEN.Rank.." "..SpellRankArray[j]..") on "..SpellTarget.." ("..SpellTargetName..")")
-								end
-							end
-							if (retarget) then
-								TargetLastTarget()
-							end
-							if SpellIsTargeting() then
-								if SpellCanTargetUnit(SpellTarget) then
-									SpellTargetUnit(SpellTarget)
-								else
-									SpellStopTargeting()
-									return false
-								end
-							end
-							return true
-						end
-					end
-				end
-			end
-			return false	-- Not enough mana to cast any rank, so just exit
-		end	
-	end
+-- 	SpellNameArray - This is an array of localized healing spells to cast
+--	SpellRankArray - This is an array of the ranks for the associated SpellNameArray
+--	ManaArray - This is an array of the mana cost for each rank of the spell.  Once the following parameters determine which rank is desired, this routine will cast the highest rank less than or equal to the chosen rank for which the caster has sufficient mana to cast
+--	MinHealArray - This is an array of the minimum number of hit points healed by each rank of the spell
+--	MaxHealArray - This is an array of the maximum number of hit points healed by each rank of the spell
+--	Mode - This is used to determine which rank of the spell to cast:
+--		"maximum" - Always use the maximum rank known
+--		"over" - Use the rank of the spell whose minimum healed amount will fully heal the target
+--		"under" - Use one rank less than the rank that would have been chosen by "over"
+--		"standard" - Use the rank of the spell whose average healed amount will fully heal the target
+--	RankAdj - Once the Mode has determined the suggested rank to use, this value (if present) is used to adjust the rank up or down
+
+  local CurrentCastingSpellRank = Zorlen_CastingSpellRank or 0
+  local SpellTarget = unit or "target"
+  local dotarget, retarget = nil, nil
+
+  -- target guards / fallback
+  if unit then
+    if not UnitExists(unit) or UnitCanAttack("player", unit) or not UnitIsFriend(unit, "player")
+       or UnitHealth(unit) <= 0 or not UnitIsVisible(unit) or UnitIsDeadOrGhost(unit) then
+      return false
+    end
+    if not UnitIsUnit("target", unit) and UnitIsFriend("target", "player") then
+      dotarget = 1
+    end
+  elseif not UnitExists("target") or UnitCanAttack("player", "target") or not UnitIsFriend("target", "player")
+     or UnitHealth("target") <= 0 or not UnitIsVisible("target") or UnitIsDeadOrGhost("target")
+     or UnitIsUnit("target","player") then
+    SpellTarget = "player"
+  end
+
+  -- compute ranks count
+  local SpellRanks = 1
+  while ManaArray[SpellRanks + 1] do SpellRanks = SpellRanks + 1 end
+
+  -- precompute adjusted min/max (don’t mutate inputs)
+  local adjMin, adjMax = {}, {}
+  for i = 1, SpellRanks do
+    local castadj
+    if TimeArray[i] < 1.5 then castadj = 1.5/3.5
+    elseif TimeArray[i] < 3.5 then castadj = TimeArray[i]/3.5
+    else castadj = 1 end
+
+    local leveladj = 1
+    if LevelLearnedArray and LevelLearnedArray[i] and LevelLearnedArray[i] < 20 then
+      leveladj = 1 - ((20 - LevelLearnedArray[i]) * 0.0375)
+    end
+
+    local bonusMin = math.min(Zorlen_PlusHealingMin + (Zorlen_VariableHealing * castadj * leveladj), MaxHealArray[i])
+    local bonusMax = math.min(Zorlen_PlusHealingMax + (Zorlen_VariableHealing * castadj * leveladj), MaxHealArray[i])
+    adjMin[i] = MinHealArray[i] + bonusMin
+    adjMax[i] = MaxHealArray[i] + bonusMax
+  end
+
+  -- nothing to heal
+  local TargetMax = UnitHealthMax(SpellTarget)
+  local TargetDamage = TargetMax - UnitHealth(SpellTarget)
+  if TargetDamage <= 0 then return false end
+
+  -- choose rank (no forced match on last entry)
+  local k = Zorlen_SelectHealRank(TargetDamage, Mode, RankAdj, SpellRanks, adjMin, adjMax)
+
+  -- helper: action button checks (if provided)
+  local function CanUseActionButton(idx)
+    if not SpellButtonArray or not SpellButtonArray[idx] then return true end
+    local btn = SpellButtonArray[idx]
+    if UnitIsUnit(SpellTarget, "target") then
+      if ActionHasRange(btn) and IsActionInRange(btn) ~= 1 then return false end
+    end
+    local usable = IsUsableAction(btn)
+    local _, cd = GetActionCooldown(btn)
+    local isCurr = IsCurrentAction(btn)
+    return (usable == 1 and cd == 0 and isCurr ~= 1)
+  end
+
+  -- try from chosen rank downward until castable
+  for j = k, 1, -1 do
+    if UnitMana("player") >= ManaArray[j] then
+      local name, rank = SpellNameArray[j], SpellRankArray[j]
+      if Zorlen_IsSpellKnown(name) and Zorlen_IsSpellKnown(name, rank) then
+        -- break cast if different spell or rank gap > 1
+        local needBreak = (not Zorlen_isCasting(name)) or (math.abs(CurrentCastingSpellRank - rank) > 1)
+        if needBreak and Zorlen_isCasting() then
+          SpellStopCasting()
+          Zorlen_debug("Stopping current cast to cast: "..name.."("..LOCALIZATION_ZORLEN.Rank.." "..rank..") on "..SpellTarget.." ("..(UnitName(SpellTarget) or "?")..")")
+        end
+
+        if dotarget then TargetUnit(unit); retarget = 1 end
+        if not CanUseActionButton(j) then return false end
+        if (not SpellButtonArray or not SpellButtonArray[j]) and not Zorlen_checkCooldownByName(name) then
+          return false
+        end
+
+        Zorlen_CastingUnit = SpellTarget
+        local tgtName = UnitName(SpellTarget) or "?"
+        CastSpellByName(name.."("..LOCALIZATION_ZORLEN.Rank.." "..rank..")")
+        Zorlen_debug("Casting: "..name.."("..LOCALIZATION_ZORLEN.Rank.." "..rank..") on "..SpellTarget.." ("..tgtName..")")
+
+        if retarget then TargetLastTarget() end
+
+        if SpellIsTargeting() then
+          if SpellCanTargetUnit(SpellTarget) then
+            SpellTargetUnit(SpellTarget)
+          else
+            SpellStopTargeting()
+            return false
+          end
+        end
+        return true
+      end
+    end
+  end
+
+  return false
 end
 
--- From: Jiral
---Edited by: BigRedBrent
+
 function Zorlen_InventoryScan(Healing, ShadowDamage, SpellDamage)
   if not (Healing or ShadowDamage or SpellDamage) then return end
 
@@ -4602,9 +4649,6 @@ function Zorlen_InventoryScan(Healing, ShadowDamage, SpellDamage)
   if needShadow then Zorlen_debug("  Zorlen_ShadowDamage = "..Zorlen_ShadowDamage) end
 end
 
-
-
-
 function Zorlen_useTrinketByName(name, find, id)
 	if name or id then
 		local n = Zorlen_GiveTrinketSlotNumberByName(name, find, id)
@@ -4628,11 +4672,10 @@ function Zorlen_useTrinketByName(name, find, id)
 	end
 	return false
 end
+
 function Zorlen_useTrinketByItemID(id, name, find)
 	return Zorlen_useTrinketByName(name, find, id)
 end
-
-
 
 
 function Zorlen_isTrinketByNameReady(name, find, id)
@@ -6151,10 +6194,12 @@ UseAction = Zorlen_Hook_UseAction
 
 
 Zorlen_Button = {}
+Zorlen_Button_Any = {}
 Zorlen_Button_MaxRank = {}
 function Zorlen_RegisterButtons(show)
 	Zorlen_debug("Zorlen Button Scan:", show)
 	Zorlen_Button = {}
+	Zorlen_Button_Any = {}
 	for i = 1, 120 do
 		local SpellName, SpellRank, RankName, text = Zorlen_GiveActionButtonToolTipFirstLineInfo(i)
 		if text then
@@ -6166,6 +6211,7 @@ function Zorlen_RegisterButtons(show)
 			if not Zorlen_Button_MaxRank[SpellName] then
 				Zorlen_Button_MaxRank[SpellName] = Zorlen_GetSpellRank(SpellName)
 			end
+
 			if Zorlen_Button_MaxRank[SpellName] > 0 then
 				Zorlen_Button[SpellName.."."..SpellRank] = i
 				if not Zorlen_Button[SpellName] and SpellRank == Zorlen_Button_MaxRank[SpellName] then
@@ -6173,6 +6219,7 @@ function Zorlen_RegisterButtons(show)
 				end
 				if not Zorlen_Button[SpellName..".Any"] then
 					Zorlen_Button[SpellName..".Any"] = i
+					Zorlen_Button_Any[SpellName] = i
 				end
 				Zorlen_debug("Action Button "..i..":  "..SpellName..""..RankName, show)
 			end
@@ -6414,6 +6461,96 @@ function Zorlen_PrintAuraCache()
 	Zorlen_debug(string.format("Last updated: %.2f seconds ago", GetTime() - (Zorlen_BuffCache.lastUpdate or 0)), 1)
 end
 
+-- /run print(Zorlen_SpellCastTime("Holy Light"))
+-- /run print(Zorlen_SpellCastTime("Consecration"))
+-- /run print(Zorlen_SpellCastTime("Redemption"))
+function Zorlen_SpellCastTime(SpellName, SpellRank)
+	if not SpellName or SpellName == "" then
+		return 0
+	end
+
+	local SpellID = Zorlen_GetSpellID(SpellName, SpellRank)
+	if not SpellID then
+		return 0
+	end
+
+	ZORLEN_Buff_Tooltip:SetSpell(SpellID, BOOKTYPE_SPELL)
+	local castTime = ZORLEN_Buff_TooltipTextLeft3:GetText()
+	if not castTime or castTime == "" then
+		return 0
+	end
+
+	castTime = string.match(castTime, "([%d%.]+)")
+	if not castTime then
+		return 0
+	end
+
+	return tonumber(castTime)
+end
+
+-- /run print(Zorlen_SpellCost("Holy Light"))
+-- /run print(Zorlen_SpellCost("Consecration"))
+-- /run print(Zorlen_SpellCost("Redemption"))
+-- /run print(Zorlen_SpellCost("Lay On Hands"))
+function Zorlen_SpellCost(SpellName, SpellRank)
+	if not SpellName or SpellName == "" then
+		return 0
+	end
+
+	local SpellID = Zorlen_GetSpellID(SpellName, SpellRank)
+	if not SpellID then
+		return 0
+	end
+
+	ZORLEN_Buff_Tooltip:SetSpell(SpellID, BOOKTYPE_SPELL)
+	local cost = ZORLEN_Buff_TooltipTextLeft2:GetText()
+	if not cost or cost == "" then
+		return 0
+	end
+
+	local _, _, amount, word = string.find(cost, "^(%d+)%s*(%a+)$")
+	if not amount or not word then
+		return 0
+	end
+
+	if LOCALIZATION_ZORLEN.CostTable[word] then
+		return tonumber(amount)
+	end
+
+	Zorlen_debug("Zorlen_SpellCost: Unrecognized cost word '" .. word .. "' for spell '" .. SpellName .. "'", 1)
+	return 0
+end
+
+-- /run print(Zorlen_SpellMinMaxValue("Holy Light"))
+-- /run print(Zorlen_SpellMinMaxValue("Flash Heal",2))
+-- /run print(Zorlen_SpellMinMaxValue("Heal"))
+-- /run print(Zorlen_SpellMinMaxValue("Heal",1))
+-- /run print(Zorlen_SpellMinMaxValue("Prayer of Healing"))
+
+-- /run print(Zorlen_SpellMinMaxValue("Lightwell"))
+function Zorlen_SpellMinMaxValue(SpellName, SpellRank)
+	if not SpellName or SpellName == "" then
+		return 0, 0
+	end
+
+	local SpellID = Zorlen_GetSpellID(SpellName, SpellRank)
+	if not SpellID then
+		return 0, 0
+	end
+
+	ZORLEN_Buff_Tooltip:SetSpell(SpellID, BOOKTYPE_SPELL)
+	local text = ZORLEN_Buff_TooltipTextLeft4:GetText()
+	if not text then
+		return 0, 0
+	end
+
+	local _, _, minHealing, maxHealing = string.find(text, "(%d+) to (%d+)")
+	if not minHealing or not maxHealing then
+		return 0, 0
+	end
+
+	return tonumber(minHealing), tonumber(maxHealing)
+end
 
 -- Example test function for Blessing of Might
 function Test_BlessingOfMightActive()

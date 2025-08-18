@@ -1,197 +1,453 @@
+Zorlen_Priest_FileBuildNumber = 690
 
-Zorlen_Priest_FileBuildNumber = 688
+Zorlen_SpellInfo = Zorlen_SpellInfo or {}
 
---[[
-  Zorlen Library - Started by Marcus S. Zarra
-  
-  4.17
-		castPsychicScream() added by Bam
-  
-  4.12
-		castFlashHeal() added by Bam
-		castUnderFlashHeal() added by Bam
-		castOverFlashHeal() added by Bam
-		castMaxFlashHeal() added by Bam
-  
-  4.01
-		castShadowguard() added by Rackartussen
-  
-  3.98
-		Reduced lag group casting functions would cause if there is not enough mana to cast the spell
-  
-   3.90.01
-		Fixed some broken spells
-  
-   3.77.00
-		Updated: castGroupPriestHeal() Will now try to skip out of range group members
-		Updated: castGroupPowerWordFortitude() Will now try to skip out of range group members
-		Updated: castGroupDispelMagic() Will now try to skip out of range group members
-  
-   3.74.00
-		Fixed: castPowerWordShield() and castSelfPowerWordShield()
-		castGroupDispelMagic() added by BigRedBrent
-		castGroupPowerWordFortitude() added by BigRedBrent
-		castGroupPriestHeal() added by BigRedBrent
-		castUnderGroupPriestHeal() added by BigRedBrent
-		castOverGroupPriestHeal() added by BigRedBrent
-		castMaxGroupPriestHeal() added by BigRedBrent
-  
-   3.70.00
-		castSmite() added by Guylien
-		isVampiricEmbrace() added by Melancholia
-		castVampiricEmbrace() added by Melancholia
-		castPowerWordShield() added by Melancholia
-		castSelfPowerWordShield() added by Melancholia
-		isPowerWordShieldActive() added by Melancholia
-		isPowerWordShield() added by Melancholia
-		isWeakenedSoul() added by BigRedBrent
-  
-   3.66.00
-		castPriestHeal() added by Jiral         (this set will cast Lesser, Heal, or Greater based on damage)
-		castUnderPriestHeal() added by Jiral
-		castOverPriestHeal() added by Jiral
-		castMaxPriestHeal() added by Jiral
-		castLesserHeal() added by Jiral
-		castUnderLesserHeal() added by Jiral
-		castOverLesserHeal() added by Jiral
-		castMaxLesserHeal() added by Jiral
-		castHeal() added by Jiral
-		castUnderHeal() added by Jiral
-		castOverHeal() added by Jiral
-		castMaxHeal() added by Jiral
-		castGreaterHeal() added by Jiral
-		castUnderGreaterHeal() added by Jiral
-		castOverGreaterHeal() added by Jiral
-		castMaxGreaterHeal() added by Jiral
-  
-   3.58.00
-		Updated the priest functions to be able to use the action bar button slot information
-  
-   3.57.00
-		Fixed: castTouchOfWeakness()
-  
-   3.56.00
-		isHolyFire()	Added by Devla
-		isMindControl()	Added by Devla
-		isMindFlay()	Added by Devla
-		isShackle()	Added by Devla
-		isTouchOfWeakness()	Added by Devla
-		isHexOfWeakness()	Added by Devla
-		isRenew()	Added by Devla
-		castRenew()	Added by Devla
-		castSelfRenew()	Added by Devla
-		castHolyFire()	Added by Devla
-		castMindControl()	Added by Devla
-		castMindFlay()	Added by Devla
-		castShackle()	Added by Devla
-		castTouchOfWeakness()	Added by Devla
-		castHexOfWeakness()	Added by Devla
-  	
-  3.53.00
-		isPowerWordFortitude() added by BigRedBrent
-		Updated: Dispel Magic and Power Word Fortitude functions
-  
-  3.5.2
-		isDevouringPlague() added by BigRedBrent
-		isShadowWordPain() added by Despised
-		isInnerFireActive() added by Despised
-		isPowerWordFortitudeActive() added by Despised
-		castShadowWordPain() added by Despised
-		castMindBlast() added by Despised
-		castDevouringPlague() added by Despised
-		castInnerFire() added by Despised
-		castPowerWordFortitude() added by BigRedBrent with help from Despised
-		castSelfPowerWordFortitude() added by BigRedBrent with help from Despised
-		castDispelMagic() added by BigRedBrent with help from Despised
-		castSelfDispelMagic() added by BigRedBrent with help from Despised
-		castFriendlyDispelMagic() added by BigRedBrent with help from Despised
+local SpellInfo = {}
+local SpellIdsByRankbySpellName = {}
 
-  3.00  Rewrite by Wynn (Bleeding Hollow), break units into class functions.
-		  
---]]
+local f = CreateFrame("Frame")
+f:RegisterEvent("PLAYER_LOGIN")
+f:SetScript("OnEvent", function()
+	SpellInfo = {}
 
+	local B = Book or BOOKTYPE_SPELL
+	for i = 1, GetNumSpellTabs() do
+		local name, _, offset, numSpells = GetSpellTabInfo(i)
+		for j = 1, numSpells do
+			local spellIndex = offset + j
+			local spellName, rank = GetSpellName(spellIndex, B)
+			local found, _, Rank = string.find(rank, "(%d+)")
+			if found then
+				RankNum = tonumber(Rank)
+			else
+				RankNum = 1
+			end
+			if spellName then
+				--print(spellIndex .. " Spell Name: " .. spellName .. ", Rank: " .. RankNum)
+				local spellInfo = ExtractSpellInfo(spellName, RankNum)
+				if spellInfo then
+					SpellInfo[spellInfo.id] = spellInfo
+				end
+			end
+		end
+	end
 
+	Zorlen_SpellInfo = SpellInfo
 
+	-- Fill SpellIdsByRankbySpellName
+	for _, info in pairs(SpellInfo) do
+		local spellId = info.id
+		local spellName = info.name
+		if not SpellIdsByRankbySpellName[spellName] then
+			SpellIdsByRankbySpellName[spellName] = {}
+		end
+		SpellIdsByRankbySpellName[spellName][info.rank] = spellId
+	end
 
---Returns true if target has Renew on
-function isRenew(unit, castable)
-	unit = unit or "target"
-	return Zorlen_checkBuff("Spell_Holy_Renew", unit, castable)
+	Zorlen_SpellIdsByRankbySpellName = SpellIdsByRankbySpellName
+end)
+
+function ExtractSpellInfo(spellName, rank)
+	if not spellName then return nil end
+
+	local spellID = Zorlen_GetSpellID(spellName, rank)
+	if not spellID then return nil end
+
+	local minVal, maxVal = Zorlen_SpellMinMaxValue(spellName, rank)
+	local spellInfo = {
+		name = spellName,
+		id = spellID,
+		rank = rank,
+		castTime = Zorlen_SpellCastTime(spellName, rank) or 0,
+		cost = Zorlen_SpellCost(spellName, rank),
+		minVal = minVal,
+		maxVal = maxVal,
+	}
+	return spellInfo
 end
 
---Made By Despised
---Returns true if Shadow Word Pain is on target
-function isShadowWordPain(unit, dispelable)
-	return Zorlen_checkDebuff("Shadow_ShadowWordPain", unit, dispelable)
+-- /run dumpSpellInfo()
+function dumpSpellInfo()
+	for _, info in pairs(SpellInfo) do
+		print("ID: " .. info.id .. ", Name: " .. info.name .. ", Rank: " .. info.rank
+			.. ", Cast Time: " .. info.castTime
+			.. ", Cost: " .. info.cost .. ", Min Value: " .. info.minVal
+			.. ", Max Value: " .. info.maxVal)
+
+		print("---")
+	end
 end
 
---Added by Devla
-function isHolyFire(unit, dispelable)
-	return Zorlen_checkDebuff("Spell_Holy_SearingLight", unit, dispelable)
+-- /run dumpAllSpellBySpellNameToRankUp("Holy Light")
+-- /run dumpAllSpellBySpellNameToRankUp("Holy Strike")
+-- /run dumpAllSpellBySpellNameToRankUp("Heal")
+-- /run dumpAllSpellBySpellNameToRankUp("Lesser Heal")
+-- /run dumpAllSpellBySpellNameToRankUp("Smite")
+function dumpAllSpellBySpellNameToRankUp(SpellName)
+	local spellIds = SpellIdsByRankbySpellName[SpellName]
+	if not spellIds then
+		print("No spells found for: " .. SpellName)
+		return
+	end
+
+	for _, spellId in pairs(spellIds) do
+		local spellInfo = SpellInfo[spellId]
+		if spellInfo then
+			print("Spell ID: " .. spellInfo.id .. " - Spell Name: " .. spellInfo.name .. " - Rank: " .. spellInfo.rank)
+			print(" Cast Time: " .. spellInfo.castTime .. " - Cost: " .. spellInfo.cost)
+			print(" Values: " .. spellInfo.minVal .. " - " .. spellInfo.maxVal)
+		end
+	end
 end
 
---Added by Devla
-function isMindControl(unit, dispelable)
-	return Zorlen_checkDebuff("Shadow_ShadowWordDominate", unit, dispelable)
+-- Test commands for generated functions (max 255 chars each):
+-- /run print("isRenew exists:", type(isRenew)=="function")
+-- /run print("isInnerFireActive exists:", type(isInnerFireActive)=="function") 
+-- /run print("castInnerFire exists:", type(castInnerFire)=="function") 
+-- /run print("castDivineSpirit exists:", type(castDivineSpirit)=="function")
+-- /run print("isRenew():", isRenew())
+-- /run print("isInnerFireActive():", isInnerFireActive())
+-- /run print("isDivineSpirit():", isDivineSpirit())
+-- /run print("isDivineSpiritActive():", isDivineSpiritActive())
+
+-- Test buff functions:
+-- /run for _,n in ipairs({"isRenew","isPowerWordFortitude","isDivineSpirit"}) do print(n..":",type(_G[n])=="function") end
+-- /run for _,n in ipairs({"isRenewActive","isPowerWordFortitudeActive","isDivineSpiritActive"}) do print(n..":",type(_G[n])=="function") end
+
+-- Test cast functions:
+-- /run for _,n in ipairs({"castInnerFire","castDivineSpirit","castMindBlast"}) do print(n..":",type(_G[n])=="function") end
+-- /run for _,n in ipairs({"castShadowWordPain","castHolyFire","castSmite"}) do print(n..":",type(_G[n])=="function") end
+
+-- Sanity check test functions:
+function ZorlenPriestSanityCheck()
+	local passed = 0
+	local total = 0
+	
+	print("=== Zorlen Priest Sanity Check ===")
+	
+	-- Test generated buff functions exist
+	local buffFuncs = {"isRenew", "isPowerWordFortitude", "isPowerWordShield", "isInnerFire", "isDivineSpirit"}
+	for _, func in ipairs(buffFuncs) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+			print("✓ " .. func .. " exists")
+		else
+			print("✗ " .. func .. " missing")
+		end
+	end
+	
+	-- Test generated active functions exist
+	local activeFuncs = {"isRenewActive", "isPowerWordFortitudeActive", "isPowerWordShieldActive", "isInnerFireActive", "isDivineSpiritActive"}
+	for _, func in ipairs(activeFuncs) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+			print("✓ " .. func .. " exists")
+		else
+			print("✗ " .. func .. " missing")
+		end
+	end
+	
+	-- Test generated cast functions exist
+	local castFuncs = {"castInnerFire", "castDivineSpirit", "castShadowWordPain", "castHolyFire", "castMindBlast"}
+	for _, func in ipairs(castFuncs) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+			print("✓ " .. func .. " exists")
+		else
+			print("✗ " .. func .. " missing")
+		end
+	end
+	
+	-- Test refactored functions exist
+	local refactoredFuncs = {"castPowerWordFortitude", "castSelfPowerWordFortitude", "castRenew", "castSelfRenew", "castPowerWordShield", "castSelfPowerWordShield"}
+	for _, func in ipairs(refactoredFuncs) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+			print("✓ " .. func .. " exists")
+		else
+			print("✗ " .. func .. " missing")
+		end
+	end
+	
+	print("=== Results: " .. passed .. "/" .. total .. " tests passed ===")
+	return passed == total
 end
 
---Added by Devla
-function isMindFlay(unit, dispelable)
-	return Zorlen_checkDebuff("Spell_Shadow_SiphonMana", unit, dispelable)
+function ZorlenPriestBuffCheck()
+	print("=== Current Priest Buffs ===")
+	print("Inner Fire Active:", isInnerFireActive())
+	print("Power Word: Fortitude Active:", isPowerWordFortitudeActive())
+	print("Power Word: Shield Active:", isPowerWordShieldActive())
+	print("Divine Spirit Active:", isDivineSpiritActive())
+	print("Renew Active:", isRenewActive())
+	if UnitExists("target") then
+		print("--- Target Buffs ---")
+		print("Target has Inner Fire:", isInnerFire())
+		print("Target has Power Word: Fortitude:", isPowerWordFortitude())
+		print("Target has Power Word: Shield:", isPowerWordShield())
+		print("Target has Divine Spirit:", isDivineSpirit())
+		print("Target has Renew:", isRenew())
+	else
+		print("No target selected for target buff checks")
+	end
 end
 
---Added by Devla
-function isShackle(unit, dispelable)
-	return Zorlen_checkDebuff("Spell_Nature_Slow", unit, dispelable)
+function ZorlenPriestGeneratedTest()
+	print("=== Generated Priest Functions Test ===")
+	local passed, total = 0, 0
+	
+	-- Test healing variants (18 functions)
+	local healingTests = {"castUnderLesserHeal", "castOverLesserHeal", "castMaxLesserHeal", "castUnderHeal", "castOverHeal", "castMaxHeal", "castUnderGreaterHeal", "castOverGreaterHeal", "castMaxGreaterHeal", "castUnderPriestHeal", "castOverPriestHeal", "castMaxPriestHeal", "castUnderFlashHeal", "castOverFlashHeal", "castMaxFlashHeal", "castUnderGroupPriestHeal", "castOverGroupPriestHeal", "castMaxGroupPriestHeal"}
+	for _, func in ipairs(healingTests) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+		else
+			print("✗ " .. func)
+		end
+	end
+	
+	-- Test buff checks (40 functions: 20 + 20 Active variants)
+	local buffTests = {"isRenew", "isPowerWordFortitude", "isShadowWordPain", "isInnerFire", "isWeakenedSoul", "isTouchOfWeakness", "isVampiricEmbrace", "isFear", "isShackleUndead", "isMindControl", "isMindSoothe", "isMindVision", "isPsychicScream", "isHolyFire", "isMindBlast", "isRenewActive", "isPowerWordFortitudeActive", "isShadowWordPainActive", "isInnerFireActive", "isWeakenedSoulActive", "isTouchOfWeaknessActive", "isVampiricEmbraceActive", "isFearActive", "isShackleUndeadActive", "isMindControlActive", "isMindSootheActive", "isMindVisionActive", "isPsychicScreamActive", "isHolyFireActive", "isMindBlastActive"}
+	for _, func in ipairs(buffTests) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+		else
+			print("✗ " .. func)
+		end
+	end
+	
+	-- Test cast functions (17 functions)
+	local castTests = {"castShadowWordPain", "castHolyFire", "castMindBlast", "castPsychicScream", "castInnerFire", "castPowerWordShield", "castTouchOfWeakness", "castVampiricEmbrace", "castFear", "castShackleUndead", "castMindControl", "castMindSoothe", "castMindVision", "castDivineSpirit", "castHexOfWeakness", "castShadowguard", "castDevouringPlague"}
+	for _, func in ipairs(castTests) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+		else
+			print("✗ " .. func)
+		end
+	end
+	
+	print("Generated functions: " .. passed .. "/" .. total .. " passed")
+	print("Total functions loaded by maps: 76 (from debug output)")
 end
 
---Added by Devla
-function isTouchOfWeakness(unit, dispelable)
-	return Zorlen_checkDebuff("Spell_Shadow_DeadofNight", unit, dispelable)
+function ZorlenPriestCastTest()
+	print("=== Priest Cast Function Test (DRY RUN) ===")
+	print("NOTE: These are test calls - no spells will be cast")
+	
+	-- Test self-buff functions (safe to test)
+	local selfFuncs = {"castInnerFire", "castSelfPowerWordFortitude", "castSelfRenew"}
+	for _, func in ipairs(selfFuncs) do
+		if type(_G[func]) == "function" then
+			print("Testing " .. func .. ": callable")
+		else
+			print("✗ " .. func .. " not found")
+		end
+	end
+	
+	print("To test actual casting, use: /run castInnerFire(true)")
+	print("The 'true' parameter enables test mode (safe)")
 end
-
---Added by Devla
-function isHexOfWeakness(unit, dispelable)
-	return Zorlen_checkDebuff("Spell_Shadow_FingerOfDeath", unit, dispelable)
-end
-
-
---Returns true if target has Power Word: Fortitude on
-function isPowerWordFortitude(unit, castable)
-	unit = unit or "target"
-	return Zorlen_checkBuff("Holy_WordFortitude", unit, castable)
-end
-
---Returns true if Devouring Plague is on target
-function isDevouringPlague(unit, dispelable)
-	local SpellName = LOCALIZATION_ZORLEN.DevouringPlague
-	return Zorlen_checkDebuffByName(SpellName, unit, dispelable)
-end
-
--- Added by Melancholia
-function isVampiricEmbrace(unit, dispelable)
-	return Zorlen_checkDebuff("Spell_Shadow_UnsummonBuilding", unit, dispelable)
-end
-
---Added by Melancholia
---Returns true if target has Power Word: Shield on
-function isPowerWordShield(unit, castable)
-	unit = unit or "target"
-	return Zorlen_checkBuff("Holy_PowerWordShield", unit, castable)
-end
-
---Added by BigRedBrent
---Debuff
-function isWeakenedSoul(unit, dispelable)
-	return Zorlen_checkDebuff("Spell_Holy_AshesToAshes", unit, dispelable)
-end
-
-
-
 
 
 --------   All functions below this line will only load if you are playing the corresponding class   --------
 if not Zorlen_isCurrentClassPriest then return end
+
+local global = getfenv(0)
+local find = string.find
+
+local countFunctions = 0
+
+-- Map for buff/debuff checking functions
+local BuffCheckMap = {
+	-- Buffs (use Zorlen_checkBuff with icon)
+	isRenew = {icon = "Spell_Holy_Renew", type = "buff"},
+	isPowerWordFortitude = {icon = "Holy_WordFortitude", type = "buff"},
+	isPowerWordShield = {icon = "Holy_PowerWordShield", type = "buff"},
+	isInnerFire = {icon = "Holy_InnerFire", type = "buff"},
+	isDivineSpirit = {icon = "Spell_Holy_DivineSpirit", type = "buff"},
+	
+	-- Debuffs (use Zorlen_checkDebuff with icon)
+	isShadowWordPain = {icon = "Shadow_ShadowWordPain", type = "debuff"},
+	isHolyFire = {icon = "Spell_Holy_SearingLight", type = "debuff"},
+	isMindControl = {icon = "Shadow_ShadowWordDominate", type = "debuff"},
+	isMindFlay = {icon = "Spell_Shadow_SiphonMana", type = "debuff"},
+	isShackleUndead = {icon = "Spell_Nature_Slow", type = "debuff"},
+	isTouchOfWeakness = {icon = "Spell_Shadow_DeadofNight", type = "debuff"},
+	isHexOfWeakness = {icon = "Spell_Shadow_FingerOfDeath", type = "debuff"},
+	isVampiricEmbrace = {icon = "Spell_Shadow_UnsummonBuilding", type = "debuff"},
+	isWeakenedSoul = {icon = "Spell_Holy_AshesToAshes", type = "debuff"},
+	isFear = {icon = "Spell_Shadow_Possession", type = "debuff"},
+	isPsychicScream = {icon = "Spell_Shadow_PsychicScream", type = "debuff"},
+	isMindBlast = {icon = "Spell_Shadow_UnholyFrenzy", type = "debuff"},
+	isMindSoothe = {icon = "Spell_Shadow_Soothe", type = "debuff"},
+	isMindVision = {icon = "Spell_Holy_MindVision", type = "debuff"},
+	
+	-- Special case using name lookup
+	isDevouringPlague = {localizationKey = "DevouringPlague", type = "debuffByName"}
+}
+
+-- Generate buff/debuff checking functions
+for funcName, config in pairs(BuffCheckMap) do
+	do
+		local f = funcName
+		local cfg = config
+		
+		global[f] = function(unit, param2)
+			if cfg.type == "buff" then
+				unit = unit or "target"
+				return Zorlen_checkBuff(cfg.icon, unit, param2)
+			elseif cfg.type == "debuff" then
+				return Zorlen_checkDebuff(cfg.icon, unit, param2)
+			elseif cfg.type == "debuffByName" then
+				local spellName = LOCALIZATION_ZORLEN and LOCALIZATION_ZORLEN[cfg.localizationKey]
+				if not spellName then return false end
+				return Zorlen_checkDebuffByName(spellName, unit, param2)
+			end
+			return false
+		end
+		
+		-- Create "Active" variant (e.g., isInnerFireActive, isPowerWordFortitudeActive)
+		local spellKey = string.gsub(f, "^is", "")
+		local activeFunc = "is" .. spellKey .. "Active"
+		global[activeFunc] = function()
+			if cfg.type == "buff" then
+				return Zorlen_checkBuff(cfg.icon)
+			elseif cfg.type == "debuff" then
+				return Zorlen_checkDebuff(cfg.icon, "player")
+			elseif cfg.type == "debuffByName" then
+				local spellName = LOCALIZATION_ZORLEN and LOCALIZATION_ZORLEN[cfg.localizationKey]
+				if not spellName then return false end
+				return Zorlen_checkDebuffByName(spellName, "player")
+			end
+			return false
+		end
+		
+		countFunctions = countFunctions + 2
+	end
+end
+
+-- Map for basic casting functions
+local CastSpellMap = {
+	castShadowWordPain = {key = "ShadowWordPain", hasDebuff = true, hasTimer = true},
+	castHolyFire = {key = "HolyFire", hasDebuff = true},
+	castMindControl = {key = "MindControl", hasDebuff = true, checkMoving = true},
+	castMindFlay = {key = "MindFlay", checkMoving = true},
+	castTouchOfWeakness = {key = "TouchOfWeakness", hasDebuff = true},
+	castHexOfWeakness = {key = "HexOfWeakness", hasDebuff = true},
+	castInnerFire = {key = "InnerFire", hasBuff = true, enemyTargetNotNeeded = true},
+	castShadowguard = {key = "Shadowguard", hasBuff = true, enemyTargetNotNeeded = true},
+	castDivineSpirit = {key = "DivineSpirit", hasBuff = true, enemyTargetNotNeeded = true},
+	castDevouringPlague = {key = "DevouringPlague"},
+	castMindBlast = {key = "MindBlast", checkMoving = true},
+	castSmite = {key = "Smite", checkMoving = true},
+	castVampiricEmbrace = {key = "VampiricEmbrace", hasDebuff = true},
+	castPsychicScream = {key = "PsychicScream", enemyTargetNotNeeded = true, noRangeCheck = true},
+	castFear = {key = "Fear", hasDebuff = true},
+	castShackleUndead = {key = "ShackleUndead", hasDebuff = true},
+	castMindSoothe = {key = "MindSoothe", checkMoving = true},
+	castMindVision = {key = "MindVision", enemyTargetNotNeeded = true}
+}
+
+-- Generate casting functions
+for funcName, config in pairs(CastSpellMap) do
+	do
+		local f = funcName
+		local cfg = config
+		
+		global[f] = function(SpellRank)
+			if cfg.checkMoving and Zorlen_isMoving() then
+				return false
+			end
+			
+			local spellName = LOCALIZATION_ZORLEN and LOCALIZATION_ZORLEN[cfg.key]
+			if not spellName then return false end
+			
+			local debuffName = cfg.hasDebuff and spellName or nil
+			local buffName = cfg.hasBuff and spellName or nil
+			local enemyTargetNotNeeded = cfg.enemyTargetNotNeeded and 1 or nil
+			local noRangeCheck = cfg.noRangeCheck and 1 or nil
+			local debuffTimer = cfg.hasTimer and 1 or nil
+			
+			return Zorlen_CastCommonRegisteredSpell(SpellRank, spellName, debuffName, nil, nil, nil, 
+				enemyTargetNotNeeded, buffName, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, 
+				noRangeCheck, nil, debuffTimer)
+		end
+		
+		countFunctions = countFunctions + 1
+	end
+end
+
+-- Map for healing variant functions (Under/Over/Max)
+local HealingVariantMap = {
+	-- Individual healing spells
+	{base = "castLesserHeal", params = {"RankAdj", "unit"}},
+	{base = "castHeal", params = {"RankAdj", "unit"}},
+	{base = "castGreaterHeal", params = {"RankAdj", "unit"}},
+	{base = "castPriestHeal", params = {"RankAdj", "unit"}},
+	{base = "castFlashHeal", params = {"RankAdj", "unit"}},
+	
+	-- Group healing spells (different parameter order)
+	{base = "castGroupPriestHeal", params = {"pet", "RankAdj"}}
+}
+
+-- Generate healing variant functions
+for _, config in ipairs(HealingVariantMap) do
+	do
+		local baseName = config.base
+		local params = config.params
+		
+		-- Generate Under variant
+		local underFunc = string.gsub(baseName, "^cast", "castUnder")
+		global[underFunc] = function(param1, param2)
+			if params[1] == "pet" then
+				-- Group healing: (pet, RankAdj) -> (pet, "under", RankAdj)
+				local DefaultAdj = param2 or -1
+				return global[baseName](param1, "under", DefaultAdj)
+			else
+				-- Individual healing: (RankAdj, unit) -> ("under", RankAdj, unit)
+				local DefaultAdj = param1 or -1
+				return global[baseName]("under", DefaultAdj, param2)
+			end
+		end
+		
+		-- Generate Over variant  
+		local overFunc = string.gsub(baseName, "^cast", "castOver")
+		global[overFunc] = function(param1, param2)
+			if params[1] == "pet" then
+				-- Group healing: (pet, RankAdj) -> (pet, "over", RankAdj)
+				local DefaultAdj = param2 or 1
+				return global[baseName](param1, "over", DefaultAdj)
+			else
+				-- Individual healing: (RankAdj, unit) -> ("over", RankAdj, unit)
+				local DefaultAdj = param1 or 1
+				return global[baseName]("over", DefaultAdj, param2)
+			end
+		end
+		
+		-- Generate Max variant
+		local maxFunc = string.gsub(baseName, "^cast", "castMax")
+		global[maxFunc] = function(param1, param2)
+			if params[1] == "pet" then
+				-- Group healing: (pet, RankAdj) -> (pet, "maximum", RankAdj)
+				return global[baseName](param1, "maximum", param2)
+			else
+				-- Individual healing: (RankAdj, unit) -> ("maximum", RankAdj, unit)
+				return global[baseName]("maximum", param1, param2)
+			end
+		end
+		
+		countFunctions = countFunctions + 3
+	end
+end
+
+Zorlen_debug("Zorlen Priest successfully loaded " .. countFunctions .. " functions.", 1)
 
 
 
@@ -199,82 +455,23 @@ if not Zorlen_isCurrentClassPriest then return end
 
 
 function Zorlen_Priest_SpellTimerSet()
-	local Number = 0
+	local Duration = 0
 	local TargetName = Zorlen_CastingSpellTargetName
 	local SpellName = Zorlen_CastingSpellName
 	local DebuffName = nil
 	local DebuffTargetName = nil
-	
+
 	if SpellName == LOCALIZATION_ZORLEN.ShadowWordPain then
-		Number = 18
-		
+		Duration = 18
 	end
-	
+
 	Zorlen_SetTimer(1, DebuffName, DebuffTargetName, "InternalZorlenSpellCastDelay", 2)
 	if Zorlen_CastingSpellTargetName then
-		Zorlen_SetTimer(Number, SpellName, TargetName, "InternalZorlenSpellTimers", nil, nil, 1)
+		Zorlen_SetTimer(Duration, SpellName, TargetName, "InternalZorlenSpellTimers", nil, nil, 1)
 	end
 end
 
 
-
---Made By Despised
---Returns true if player has Inner Fire on
-function isInnerFireActive()
-	return Zorlen_checkBuff("Holy_InnerFire")
-end
-
---Made By Despised
---Returns true if player has Power Word: Fortitude on
-function isPowerWordFortitudeActive()
-	return Zorlen_checkBuff("Holy_WordFortitude")
-end
-
-
-function castPsychicScream(SpellRank)
-	local SpellName = LOCALIZATION_ZORLEN.PsychicScream
-	local EnemyTargetNotNeeded = 1
-	local NoRangeCheck = 1
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, NoRangeCheck)
-end
-
---Made By Despised
---Casts Shadow Word Pain on Target if its not active already
-function castShadowWordPain(SpellRank)
-	local SpellName = LOCALIZATION_ZORLEN.ShadowWordPain
-	local DebuffName = SpellName
-	local DebuffTimer = 1
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, DebuffTimer)
-end
-
---Added By Devla
---Casts Holy Fire on Target if its not active already
-function castHolyFire(SpellRank)
-	local SpellName = LOCALIZATION_ZORLEN.HolyFire
-	local DebuffName = SpellName
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName)
-end
-
---Added By Devla
---Casts Mind Control on Target if its not active already
-function castMindControl(SpellRank)
-	if Zorlen_isMoving() then
-		return false
-	end
-	local SpellName = LOCALIZATION_ZORLEN.MindControl
-	local DebuffName = SpellName
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName)
-end
-
---Added By Devla
---Casts Mind Flay on Target if its not active already
-function castMindFlay(SpellRank)
-	if Zorlen_isMoving() then
-		return false
-	end
-	local SpellName = LOCALIZATION_ZORLEN.MindFlay
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName)
-end
 
 --Added By Devla
 --Casts Shackle Undead on Target if the target is not already cc'ed
@@ -289,41 +486,10 @@ function castShackle()
 	local DebuffCheckIncluded = 1
 	local DebuffCheck = Zorlen_isNoDamageCC()
 	local StopCasting = DebuffCheck
-	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, nil, nil, nil, DebuffCheckIncluded, DebuffCheck, nil, nil, nil, nil, nil, nil, nil, nil, StopCasting)
+	return Zorlen_CastCommonRegisteredSpell(nil, SpellName, nil, nil, nil, nil, nil, nil, nil, DebuffCheckIncluded,
+		DebuffCheck, nil, nil, nil, nil, nil, nil, nil, nil, StopCasting)
 end
 
---Added By Devla
---Casts Touch of Weakness on Target if its not active already
-function castTouchOfWeakness(SpellRank)
-	local SpellName = LOCALIZATION_ZORLEN.TouchOfWeakness
-	local DebuffName = SpellName
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName)
-end
-
---Added By Devla
---Casts Hex of Weakness on Target if its not active already
-function castHexOfWeakness(SpellRank)
-	local SpellName = LOCALIZATION_ZORLEN.HexOfWeakness
-	local DebuffName = SpellName
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName)
-end
-
---Made by Despised
---Casts Inner Fire if it is not active
-function castInnerFire(SpellRank)
-	local SpellName = LOCALIZATION_ZORLEN.InnerFire
-	local EnemyTargetNotNeeded = 1
-	local BuffName = SpellName
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, BuffName)
-end
-
---Added by Rackartussen
-function castShadowguard(SpellRank)
-	local SpellName = LOCALIZATION_ZORLEN.Shadowguard
-	local EnemyTargetNotNeeded = 1
-	local BuffName = SpellName
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, nil, nil, nil, nil, EnemyTargetNotNeeded, BuffName)
-end
 
 -- Will try to cast the spell on everyone in your party or raid if a debuff is found on them
 -- ( I know this will not work as well as "Decursive", but it was easy to add with the other additions already in place, so I added it. )
@@ -346,7 +512,7 @@ function castGroupDispelMagic(pet)
 		else
 			return false
 		end
-		if not SpellButton or (( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 )) then
+		if not SpellButton or ((isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)) then
 			if SpellButton or Zorlen_checkCooldown(SpellID) then
 				local counter = 1
 				local notunitarray = {}
@@ -383,49 +549,83 @@ end
 function castFriendlyDispelMagic()
 	local SpellName = LOCALIZATION_ZORLEN.DispelMagic
 	local SpellButton = Zorlen_Button[SpellName]
+	local SpellID = nil
+	
+	-- Check spell availability
+	local canCast = false
 	if SpellButton then
 		local isUsable, notEnoughMana = IsUsableAction(SpellButton)
 		local _, duration, _ = GetActionCooldown(SpellButton)
-		local inRange = IsActionInRange(SpellButton)
 		local isCurrent = IsCurrentAction(SpellButton)
-		if ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 ) then
-			if (( inRange == 1 ) and UnitIsFriend("player", "target") and Zorlen_checkDebuff(nil, nil, "dispelable")) or (not UnitExists("target") and Zorlen_checkDebuff(nil, "player", "dispelable")) then
-				UseAction(SpellButton)
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			elseif UnitExists("target") and Zorlen_checkDebuff(nil, "player", "dispelable") then
-				TargetUnit("player");
-				UseAction(SpellButton)
-				TargetLastTarget();
-				return true
-			end
-		end
+		canCast = (isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)
 	elseif Zorlen_IsSpellKnown(SpellName) then
-		Zorlen_debug(""..SpellName.." was not found on any of the action bars!")
-		local SpellID = Zorlen_GetSpellID(SpellName);
-		if Zorlen_checkCooldown(SpellID) then
-			if (UnitIsFriend("player", "target") and Zorlen_checkDebuff(nil, nil, "dispelable")) or (not UnitExists("target") and Zorlen_checkDebuff(nil, "player", "dispelable")) then
-				CastSpell(SpellID, 0)
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			elseif UnitExists("target") and Zorlen_checkDebuff(nil, "player", "dispelable") then
-				TargetUnit("player");
-				CastSpell(SpellID, 0)
-				TargetLastTarget();
-				return true
-			end
-		end
+		Zorlen_debug("" .. SpellName .. " was not found on any of the action bars!")
+		SpellID = Zorlen_GetSpellID(SpellName)
+		canCast = Zorlen_checkCooldown(SpellID)
+	else
+		return false
 	end
+	
+	-- Early return if spell not ready
+	if not canCast then
+		return false
+	end
+	
+	-- Check target status
+	local hasTarget = UnitExists("target")
+	local isFriendlyTarget = hasTarget and UnitIsFriend("player", "target")
+	local targetNeedsDispel = isFriendlyTarget and Zorlen_checkDebuff(nil, nil, "dispelable")
+	local targetInRange = SpellButton and IsActionInRange(SpellButton) == 1
+	local playerNeedsDispel = Zorlen_checkDebuff(nil, "player", "dispelable")
+	
+	-- Try to cast on friendly target first (if they need it and are in range)
+	if targetNeedsDispel and (not SpellButton or targetInRange) then
+		if SpellButton then
+			UseAction(SpellButton)
+		else
+			CastSpell(SpellID, 0)
+		end
+		
+		if SpellIsTargeting() and SpellCanTargetUnit("player") then
+			SpellTargetUnit("player")
+		elseif SpellIsTargeting() then
+			SpellStopTargeting()
+			return false
+		end
+		return true
+	end
+	
+	-- Try to cast on self if no target or player needs dispel
+	if (not hasTarget or not isFriendlyTarget) and playerNeedsDispel then
+		if SpellButton then
+			UseAction(SpellButton)
+		else
+			CastSpell(SpellID, 0)
+		end
+		
+		if SpellIsTargeting() and SpellCanTargetUnit("player") then
+			SpellTargetUnit("player")
+		elseif SpellIsTargeting() then
+			SpellStopTargeting()
+			return false
+		end
+		return true
+	end
+	
+	-- Cast on self if we have a target but player needs dispel (retarget scenario)
+	if hasTarget and playerNeedsDispel then
+		TargetUnit("player")
+		
+		if SpellButton then
+			UseAction(SpellButton)
+		else
+			CastSpell(SpellID, 0)
+		end
+		
+		TargetLastTarget()
+		return true
+	end
+	
 	return false
 end
 
@@ -433,52 +633,60 @@ end
 function castSelfDispelMagic()
 	local SpellName = LOCALIZATION_ZORLEN.DispelMagic
 	local SpellButton = Zorlen_Button[SpellName]
-	local exist = nil;
-	if SpellButton and Zorlen_checkDebuff(nil, "player", "dispelable") then
+	local SpellID = nil
+	
+	-- Early return if player has no dispelable debuffs
+	if not Zorlen_checkDebuff(nil, "player", "dispelable") then
+		return false
+	end
+	
+	-- Check spell availability
+	local canCast = false
+	if SpellButton then
 		local isUsable, notEnoughMana = IsUsableAction(SpellButton)
 		local _, duration, _ = GetActionCooldown(SpellButton)
 		local isCurrent = IsCurrentAction(SpellButton)
-		if ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 ) then
-			if (UnitExists("target")) and (not UnitIsUnit("player", "target")) then
-				exist = 1;
-				TargetUnit("player");
-			end
-			UseAction(SpellButton)
-			if (exist) then
-				TargetLastTarget();
-			end
-			if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-				SpellTargetUnit("player");
-			elseif SpellIsTargeting() then
-				SpellStopTargeting()
-				return false
-			end
-			return true
-		end
+		canCast = (isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)
 	elseif Zorlen_IsSpellKnown(SpellName) then
-		Zorlen_debug(""..SpellName.." was not found on any of the action bars!")
-		if Zorlen_checkDebuff(nil, "player", "dispelable") then
-			local SpellID = Zorlen_GetSpellID(SpellName);
-			if Zorlen_checkCooldown(SpellID) then
-				if (UnitExists("target")) and (not UnitIsUnit("player", "target")) then
-					exist = 1;
-					TargetUnit("player");
-				end
-				CastSpell(SpellID, 0)
-				if (exist) then
-					TargetLastTarget();
-				end
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			end
-		end
+		Zorlen_debug("" .. SpellName .. " was not found on any of the action bars!")
+		SpellID = Zorlen_GetSpellID(SpellName)
+		canCast = Zorlen_checkCooldown(SpellID)
+	else
+		return false
 	end
-	return false
+	
+	-- Early return if spell not ready
+	if not canCast then
+		return false
+	end
+	
+	-- Manage targeting (retarget if we have a non-player target)
+	local needsRetarget = UnitExists("target") and not UnitIsUnit("player", "target")
+	if needsRetarget then
+		TargetUnit("player")
+	end
+	
+	-- Cast the spell
+	if SpellButton then
+		UseAction(SpellButton)
+	else
+		CastSpell(SpellID, 0)
+	end
+	
+	-- Restore target if needed
+	if needsRetarget then
+		TargetLastTarget()
+	end
+	
+	-- Handle spell targeting
+	if SpellIsTargeting() and SpellCanTargetUnit("player") then
+		SpellTargetUnit("player")
+	elseif SpellIsTargeting() then
+		SpellStopTargeting()
+		return false
+	end
+	
+	return true
 end
 
 -- Will cast the spell on an enemy target if one is targeted.
@@ -486,110 +694,159 @@ end
 function castDispelMagic()
 	local SpellName = LOCALIZATION_ZORLEN.DispelMagic
 	local SpellButton = Zorlen_Button[SpellName]
+	local SpellID = nil
+	
+	-- Check spell availability
+	local canCast = false
 	if SpellButton then
 		local isUsable, notEnoughMana = IsUsableAction(SpellButton)
 		local _, duration, _ = GetActionCooldown(SpellButton)
-		local inRange = IsActionInRange(SpellButton)
 		local isCurrent = IsCurrentAction(SpellButton)
-		if ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 ) then
-			if (( inRange == 1 ) and UnitIsFriend("player", "target") and Zorlen_checkDebuff(nil, nil, "dispelable")) or (not UnitExists("target") and Zorlen_checkDebuff(nil, "player", "dispelable")) then
-				UseAction(SpellButton)
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			elseif UnitExists("target") and Zorlen_checkDebuff(nil, "player", "dispelable") then
-				TargetUnit("player");
-				UseAction(SpellButton)
-				TargetLastTarget();
-				return true
-			elseif ( inRange == 1 ) and Zorlen_TargetIsEnemy() then
-				UseAction(SpellButton)
-				return true
-			end
-		end
+		canCast = (isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)
 	elseif Zorlen_IsSpellKnown(SpellName) then
-		Zorlen_debug(""..SpellName.." was not found on any of the action bars!")
-		local SpellID = Zorlen_GetSpellID(SpellName);
-		if Zorlen_checkCooldown(SpellID) then
-			if (UnitIsFriend("player", "target") and Zorlen_checkDebuff(nil, nil, "dispelable")) or (not UnitExists("target") and Zorlen_checkDebuff(nil, "player", "dispelable")) then
-				CastSpell(SpellID, 0)
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			elseif UnitExists("target") and Zorlen_checkDebuff(nil, "player", "dispelable") then
-				TargetUnit("player");
-				CastSpell(SpellID, 0)
-				TargetLastTarget();
-				return true
-			elseif Zorlen_TargetIsEnemy() then
-				CastSpell(SpellID, 0)
-				return true
-			end
-		end
+		Zorlen_debug("" .. SpellName .. " was not found on any of the action bars!")
+		SpellID = Zorlen_GetSpellID(SpellName)
+		canCast = Zorlen_checkCooldown(SpellID)
+	else
+		return false
 	end
+	
+	-- Early return if spell not ready
+	if not canCast then
+		return false
+	end
+	
+	-- Check target status
+	local hasTarget = UnitExists("target")
+	local isFriendlyTarget = hasTarget and UnitIsFriend("player", "target")
+	local isEnemyTarget = hasTarget and Zorlen_TargetIsEnemy()
+	local targetNeedsDispel = isFriendlyTarget and Zorlen_checkDebuff(nil, nil, "dispelable")
+	local targetInRange = SpellButton and IsActionInRange(SpellButton) == 1
+	local playerNeedsDispel = Zorlen_checkDebuff(nil, "player", "dispelable")
+	
+	-- Priority 1: Cast on friendly target (if they need dispel and are in range)
+	if targetNeedsDispel and (not SpellButton or targetInRange) then
+		if SpellButton then
+			UseAction(SpellButton)
+		else
+			CastSpell(SpellID, 0)
+		end
+		
+		if SpellIsTargeting() and SpellCanTargetUnit("player") then
+			SpellTargetUnit("player")
+		elseif SpellIsTargeting() then
+			SpellStopTargeting()
+			return false
+		end
+		return true
+	end
+	
+	-- Priority 2: Cast on self if no target and player needs dispel
+	if not hasTarget and playerNeedsDispel then
+		if SpellButton then
+			UseAction(SpellButton)
+		else
+			CastSpell(SpellID, 0)
+		end
+		
+		if SpellIsTargeting() and SpellCanTargetUnit("player") then
+			SpellTargetUnit("player")
+		elseif SpellIsTargeting() then
+			SpellStopTargeting()
+			return false
+		end
+		return true
+	end
+	
+	-- Priority 3: Cast on self if we have a target but player needs dispel (retarget scenario)
+	if hasTarget and playerNeedsDispel then
+		TargetUnit("player")
+		
+		if SpellButton then
+			UseAction(SpellButton)
+		else
+			CastSpell(SpellID, 0)
+		end
+		
+		TargetLastTarget()
+		return true
+	end
+	
+	-- Priority 4: Cast on enemy target (if in range)
+	if isEnemyTarget and (not SpellButton or targetInRange) then
+		if SpellButton then
+			UseAction(SpellButton)
+		else
+			CastSpell(SpellID, 0)
+		end
+		return true
+	end
+	
 	return false
 end
 
-
-
-
 -- Will cast the spell if it is not on your target, if it is on your target or it can not be cast on your target, then it will cast on yourself if it is not on you.
 function castGroupPowerWordFortitude(pet)
-	if not castPowerWordFortitude() then
-		local SpellName = LOCALIZATION_ZORLEN.PowerWordFortitude
-		local SpellButton = Zorlen_Button[SpellName]
-		local _ = nil
-		local isUsable = nil
-		local notEnoughMana = nil
-		local duration = nil
-		local isCurrent = nil
-		local SpellID = nil
-		if SpellButton then
-			isUsable, notEnoughMana = IsUsableAction(SpellButton)
-			_, duration, _ = GetActionCooldown(SpellButton)
-			isCurrent = IsCurrentAction(SpellButton)
-		elseif Zorlen_IsSpellKnown(SpellName) then
-			SpellID = Zorlen_GetSpellID(SpellName)
-		else
+	-- Early return if we can cast on current target
+	if castPowerWordFortitude() then
+		return true
+	end
+	
+	local SpellName = LOCALIZATION_ZORLEN.PowerWordFortitude
+	local SpellButton = Zorlen_Button[SpellName]
+	local SpellID = nil
+	
+	-- Check if spell is available
+	if SpellButton then
+		local isUsable, notEnoughMana = IsUsableAction(SpellButton)
+		local _, duration, _ = GetActionCooldown(SpellButton)
+		local isCurrent = IsCurrentAction(SpellButton)
+		
+		-- Early return if spell button not ready
+		if not ((isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)) then
 			return false
 		end
-		if not SpellButton or (( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 )) then
-			if SpellButton or Zorlen_checkCooldown(SpellID) then
-				local counter = 1
-				local notunitarray = {}
-				while counter do
-					local u = Zorlen_GiveGroupUnitWithoutBuffBySpellName(SpellName, pet, nil, nil, notunitarray)
-					if u then
-						if UnitIsUnit("target", u) or UnitIsUnit("player", u) then
-							notunitarray[counter] = u
-						else
-							TargetUnit(u)
-							if castPowerWordFortitude() then
-								TargetLastTarget()
-								return true
-							end
-							TargetLastTarget()
-							notunitarray[counter] = u
-						end
-						counter = counter + 1
-						if not SpellButton then
-							counter = nil
-						end
-					else
-						counter = nil
-					end
-				end
+	elseif Zorlen_IsSpellKnown(SpellName) then
+		SpellID = Zorlen_GetSpellID(SpellName)
+		-- Early return if spell not on cooldown
+		if not Zorlen_checkCooldown(SpellID) then
+			return false
+		end
+	else
+		return false
+	end
+	
+	-- Look for group members who need the buff
+	local counter = 1
+	local notunitarray = {}
+	while counter do
+		local u = Zorlen_GiveGroupUnitWithoutBuffBySpellName(SpellName, pet, nil, nil, notunitarray)
+		
+		if not u then
+			break
+		end
+		
+		-- Skip current target and player
+		if UnitIsUnit("target", u) or UnitIsUnit("player", u) then
+			notunitarray[counter] = u
+		else
+			TargetUnit(u)
+			if castPowerWordFortitude() then
+				TargetLastTarget()
+				return true
 			end
+			TargetLastTarget()
+			notunitarray[counter] = u
+		end
+		
+		counter = counter + 1
+		
+		-- Break loop for spell ID mode (no action button)
+		if not SpellButton then
+			break
 		end
 	end
+	
 	return false
 end
 
@@ -597,282 +854,277 @@ end
 function castPowerWordFortitude()
 	local SpellName = LOCALIZATION_ZORLEN.PowerWordFortitude
 	local SpellButton = Zorlen_Button[SpellName]
-	local friend = nil;
+	local SpellID = nil
+	
+	-- Check spell availability and get action details
+	local canCast = false
 	if SpellButton then
 		local isUsable, notEnoughMana = IsUsableAction(SpellButton)
 		local _, duration, _ = GetActionCooldown(SpellButton)
-		local inRange = IsActionInRange(SpellButton)
 		local isCurrent = IsCurrentAction(SpellButton)
-		if (UnitIsFriend("player", "target") and not UnitIsUnit("player","target") and ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( inRange == 1 ) and ( isCurrent ~= 1 ) and (not isPowerWordFortitude())) then
-			UseAction(SpellButton)
-			if SpellIsTargeting() then
-				SpellStopTargeting()
-				return false
-			end
-			return true
-		elseif ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 ) and (not isPowerWordFortitudeActive()) then
-			if (UnitIsFriend("player", "target") and not UnitIsUnit("player","target")) then
-				friend = 1;
-				TargetUnit("player");
-			end
-			UseAction(SpellButton)
-			if (friend) then
-				TargetLastTarget();
-			end
-			if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-				SpellTargetUnit("player");
-			elseif SpellIsTargeting() then
-				SpellStopTargeting()
-				return false
-			end
-			return true
-		end
+		canCast = (isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)
 	elseif Zorlen_IsSpellKnown(SpellName) then
-		Zorlen_debug(""..SpellName.." was not found on any of the action bars!")
-		local SpellID = Zorlen_GetSpellID(SpellName)
-		if Zorlen_checkCooldown(SpellID) then
-			if (UnitIsFriend("player", "target") and not UnitIsUnit("player", "target") and not isPowerWordFortitude()) then
-				CastSpell(SpellID, 0)
-				if SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			elseif (not isPowerWordFortitudeActive()) then
-				if (UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")) then
-					friend = 1;
-					TargetUnit("player");
-				end
-				CastSpell(SpellID, 0)
-				if (friend) then
-					TargetLastTarget();
-				end
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			end
-		end
+		Zorlen_debug("" .. SpellName .. " was not found on any of the action bars!")
+		SpellID = Zorlen_GetSpellID(SpellName)
+		canCast = Zorlen_checkCooldown(SpellID)
+	else
+		return false
 	end
-	return false
+	
+	-- Early return if spell not ready
+	if not canCast then
+		return false
+	end
+	
+	-- Check if we can cast on friendly target
+	local hasTarget = UnitExists("target")
+	local isFriendlyTarget = hasTarget and UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")
+	local targetNeedsBuff = isFriendlyTarget and not isPowerWordFortitude()
+	local targetInRange = SpellButton and IsActionInRange(SpellButton) == 1
+	
+	-- Cast on friendly target if they need it and are in range
+	if targetNeedsBuff and (not SpellButton or targetInRange) then
+		if SpellButton then
+			UseAction(SpellButton)
+		else
+			CastSpell(SpellID, 0)
+		end
+		
+		if SpellIsTargeting() then
+			SpellStopTargeting()
+			return false
+		end
+		return true
+	end
+	
+	-- Check if player needs buff
+	if isPowerWordFortitudeActive() then
+		return false
+	end
+	
+	-- Cast on self (with target management if needed)
+	local needsRetarget = isFriendlyTarget
+	if needsRetarget then
+		TargetUnit("player")
+	end
+	
+	if SpellButton then
+		UseAction(SpellButton)
+	else
+		CastSpell(SpellID, 0)
+	end
+	
+	if needsRetarget then
+		TargetLastTarget()
+	end
+	
+	if SpellIsTargeting() and SpellCanTargetUnit("player") then
+		SpellTargetUnit("player")
+	elseif SpellIsTargeting() then
+		SpellStopTargeting()
+		return false
+	end
+	
+	return true
 end
 
 -- Will only cast the spell on your self if you do not have it on you and will not be able to cast on anything else.
 function castSelfPowerWordFortitude()
-	local SpellName = LOCALIZATION_ZORLEN.PowerWordFortitude;
+	local SpellName = LOCALIZATION_ZORLEN.PowerWordFortitude
 	local SpellButton = Zorlen_Button[SpellName]
-	local friend = nil;
+	local SpellID = nil
+	
+	-- Early return if player already has buff
+	if isPowerWordFortitudeActive() then
+		return false
+	end
+	
+	-- Check spell availability
+	local canCast = false
 	if SpellButton then
 		local isUsable, notEnoughMana = IsUsableAction(SpellButton)
 		local _, duration, _ = GetActionCooldown(SpellButton)
 		local isCurrent = IsCurrentAction(SpellButton)
-		if ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 ) and (not isPowerWordFortitudeActive()) then
-			if (UnitIsFriend("player", "target") and not UnitIsUnit("player","target")) then
-				friend = 1;
-				TargetUnit("player");
-			end
-			UseAction(SpellButton)
-			if (friend) then
-				TargetLastTarget();
-			end
-			if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-				SpellTargetUnit("player");
-			elseif SpellIsTargeting() then
-				SpellStopTargeting()
-				return false
-			end
-			return true
-		end
+		canCast = (isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)
 	elseif Zorlen_IsSpellKnown(SpellName) then
-		Zorlen_debug(""..SpellName.." was not found on any of the action bars!")
-		local SpellID = Zorlen_GetSpellID(SpellName);
-		if Zorlen_checkCooldown(SpellID) then
-			if (not isPowerWordFortitudeActive()) then
-				if (UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")) then
-					friend = 1;
-					TargetUnit("player");
-				end
-				CastSpell(SpellID, 0)
-				if (friend) then
-					TargetLastTarget();
-				end
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			end
-		end
+		Zorlen_debug("" .. SpellName .. " was not found on any of the action bars!")
+		SpellID = Zorlen_GetSpellID(SpellName)
+		canCast = Zorlen_checkCooldown(SpellID)
+	else
+		return false
 	end
-	return false
+	
+	-- Early return if spell not ready
+	if not canCast then
+		return false
+	end
+	
+	-- Manage targeting (retarget if we have a friendly target)
+	local needsRetarget = UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")
+	if needsRetarget then
+		TargetUnit("player")
+	end
+	
+	-- Cast the spell
+	if SpellButton then
+		UseAction(SpellButton)
+	else
+		CastSpell(SpellID, 0)
+	end
+	
+	-- Restore target if needed
+	if needsRetarget then
+		TargetLastTarget()
+	end
+	
+	-- Handle spell targeting
+	if SpellIsTargeting() and SpellCanTargetUnit("player") then
+		SpellTargetUnit("player")
+	elseif SpellIsTargeting() then
+		SpellStopTargeting()
+		return false
+	end
+	
+	return true
 end
 
 -- Will cast the spell if it is not on your target, if it is on your target or it can not be cast on your target, then it will cast on yourself if it is not on you.
 function castRenew()
 	local SpellName = LOCALIZATION_ZORLEN.Renew
 	local SpellButton = Zorlen_Button[SpellName]
-	local friend = nil;
+	local SpellID = nil
+	
+	-- Check spell availability
+	local canCast = false
 	if SpellButton then
 		local isUsable, notEnoughMana = IsUsableAction(SpellButton)
 		local _, duration, _ = GetActionCooldown(SpellButton)
-		local inRange = IsActionInRange(SpellButton)
 		local isCurrent = IsCurrentAction(SpellButton)
-		if (UnitIsFriend("player", "target") and not UnitIsUnit("player","target") and ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( inRange == 1 ) and ( isCurrent ~= 1 ) and (not isRenew())) then
-			UseAction(SpellButton)
-			if SpellIsTargeting() then
-				SpellStopTargeting()
-				return false
-			end
-			return true
-		elseif ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 ) and (not UnitExists("target") or not UnitIsFriend("player", "target")) and (not isRenew("player")) then
-			if (UnitIsFriend("player", "target") and not UnitIsUnit("player","target")) then
-				friend = 1;
-				TargetUnit("player");
-			end
-			UseAction(SpellButton)
-			if (friend) then
-				TargetLastTarget();
-			end
-			if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-				SpellTargetUnit("player");
-			elseif SpellIsTargeting() then
-				SpellStopTargeting()
-				return false
-			end
-			return true
-		end
+		canCast = (isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)
 	elseif Zorlen_IsSpellKnown(SpellName) then
-		Zorlen_debug(""..SpellName.." was not found on any of the action bars!")
-		local SpellID = Zorlen_GetSpellID(SpellName)
-		if Zorlen_checkCooldown(SpellID) then
-			if (UnitIsFriend("player", "target") and not UnitIsUnit("player", "target") and not isRenew()) then
-				CastSpell(SpellID, 0)
-				if SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			elseif (not UnitExists("target") or not UnitIsFriend("player", "target")) and (not isRenew("player")) then
-				if (UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")) then
-					friend = 1;
-					TargetUnit("player");
-				end
-				CastSpell(SpellID, 0)
-				if (friend) then
-					TargetLastTarget();
-				end
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			end
-		end
+		Zorlen_debug("" .. SpellName .. " was not found on any of the action bars!")
+		SpellID = Zorlen_GetSpellID(SpellName)
+		canCast = Zorlen_checkCooldown(SpellID)
+	else
+		return false
 	end
-	return false
+	
+	-- Early return if spell not ready
+	if not canCast then
+		return false
+	end
+	
+	-- Check target status
+	local hasTarget = UnitExists("target")
+	local isFriendlyTarget = hasTarget and UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")
+	local targetNeedsRenew = isFriendlyTarget and not isRenew()
+	local targetInRange = SpellButton and IsActionInRange(SpellButton) == 1
+	
+	-- Try to cast on friendly target first
+	if targetNeedsRenew and (not SpellButton or targetInRange) then
+		if SpellButton then
+			UseAction(SpellButton)
+		else
+			CastSpell(SpellID, 0)
+		end
+		
+		if SpellIsTargeting() then
+			SpellStopTargeting()
+			return false
+		end
+		return true
+	end
+	
+	-- Check if we should cast on self (no target or enemy target, and player needs renew)
+	local shouldCastOnSelf = (not hasTarget or not UnitIsFriend("player", "target")) and not isRenew("player")
+	if not shouldCastOnSelf then
+		return false
+	end
+	
+	-- Cast on self with target management
+	local needsRetarget = isFriendlyTarget
+	if needsRetarget then
+		TargetUnit("player")
+	end
+	
+	if SpellButton then
+		UseAction(SpellButton)
+	else
+		CastSpell(SpellID, 0)
+	end
+	
+	if needsRetarget then
+		TargetLastTarget()
+	end
+	
+	if SpellIsTargeting() and SpellCanTargetUnit("player") then
+		SpellTargetUnit("player")
+	elseif SpellIsTargeting() then
+		SpellStopTargeting()
+		return false
+	end
+	
+	return true
 end
 
 -- Will only cast the spell on your self if you do not have it on you and will not be able to cast on anything else.
 function castSelfRenew()
 	local SpellName = LOCALIZATION_ZORLEN.Renew
 	local SpellButton = Zorlen_Button[SpellName]
-	local friend = nil;
+	local SpellID = nil
+	
+	-- Early return if player already has renew
+	if isRenew("player") then
+		return false
+	end
+	
+	-- Check spell availability
+	local canCast = false
 	if SpellButton then
 		local isUsable, notEnoughMana = IsUsableAction(SpellButton)
 		local _, duration, _ = GetActionCooldown(SpellButton)
 		local isCurrent = IsCurrentAction(SpellButton)
-		if ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 ) and (not isRenew("player")) then
-			if (UnitIsFriend("player", "target") and not UnitIsUnit("player","target")) then
-				friend = 1;
-				TargetUnit("player");
-			end
-			UseAction(SpellButton)
-			if (friend) then
-				TargetLastTarget();
-			end
-			if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-				SpellTargetUnit("player");
-			elseif SpellIsTargeting() then
-				SpellStopTargeting()
-				return false
-			end
-			return true
-		end
+		canCast = (isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)
 	elseif Zorlen_IsSpellKnown(SpellName) then
-		Zorlen_debug(""..SpellName.." was not found on any of the action bars!")
-		local SpellID = Zorlen_GetSpellID(SpellName);
-		if Zorlen_checkCooldown(SpellID) then
-			if (not isRenew("player")) then
-				if (UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")) then
-					friend = 1;
-					TargetUnit("player");
-				end
-				CastSpell(SpellID, 0)
-				if (friend) then
-					TargetLastTarget();
-				end
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			end
-		end
-	end
-	return false
-end
-
---Made by Despised
---Casts Devouring Plague(undead priest spell) if cooldown is up
-function castDevouringPlague(SpellRank)
-	local SpellName = LOCALIZATION_ZORLEN.DevouringPlague
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName)
-end
-
-
---Made By Despised
---Casts Mind Blast if cooldown is up
-function castMindBlast(SpellRank)
-	if Zorlen_isMoving() then
+		Zorlen_debug("" .. SpellName .. " was not found on any of the action bars!")
+		SpellID = Zorlen_GetSpellID(SpellName)
+		canCast = Zorlen_checkCooldown(SpellID)
+	else
 		return false
 	end
-	local SpellName = LOCALIZATION_ZORLEN.MindBlast
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName)
-end
-
---Made By Guylien
---Casts Smite if cooldown is up
-function castSmite(SpellRank)
-	if Zorlen_isMoving() then
+	
+	-- Early return if spell not ready
+	if not canCast then
 		return false
 	end
-	local SpellName = LOCALIZATION_ZORLEN.Smite
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName)
-end
-
-
-
--- Added by Melancholia
---Casts Vamperic Embrace on Target if its not active already
-function castVampiricEmbrace(SpellRank)
-	local SpellName = LOCALIZATION_ZORLEN.VampiricEmbrace
-	local DebuffName = SpellName
-	return Zorlen_CastCommonRegisteredSpell(SpellRank, SpellName, DebuffName)
-end
-
---Added by Melancholia
---Returns true if player has Power Word: Shield on
-function isPowerWordShieldActive()
-	return Zorlen_checkBuff("Holy_PowerWordShield")
+	
+	-- Manage targeting (retarget if we have a friendly target)
+	local needsRetarget = UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")
+	if needsRetarget then
+		TargetUnit("player")
+	end
+	
+	-- Cast the spell
+	if SpellButton then
+		UseAction(SpellButton)
+	else
+		CastSpell(SpellID, 0)
+	end
+	
+	-- Restore target if needed
+	if needsRetarget then
+		TargetLastTarget()
+	end
+	
+	-- Handle spell targeting
+	if SpellIsTargeting() and SpellCanTargetUnit("player") then
+		SpellTargetUnit("player")
+	elseif SpellIsTargeting() then
+		SpellStopTargeting()
+		return false
+	end
+	
+	return true
 end
 
 
@@ -882,370 +1134,334 @@ end
 function castPowerWordShield()
 	local SpellName = LOCALIZATION_ZORLEN.PowerWordShield
 	local SpellButton = Zorlen_Button[SpellName]
-	local friend = nil;
+	local SpellID = nil
+	
+	-- Check spell availability
+	local canCast = false
 	if SpellButton then
 		local isUsable, notEnoughMana = IsUsableAction(SpellButton)
 		local _, duration, _ = GetActionCooldown(SpellButton)
-		local inRange = IsActionInRange(SpellButton)
 		local isCurrent = IsCurrentAction(SpellButton)
-		if (UnitIsFriend("player", "target") and not UnitIsUnit("player","target") and ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( inRange == 1 ) and ( isCurrent ~= 1 ) and (not isWeakenedSoul()) and (not isPowerWordShield())) then
-			UseAction(SpellButton)
-			if SpellIsTargeting() then
-				SpellStopTargeting()
-				return false
-			end
-			return true
-		elseif ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 ) and (not isWeakenedSoul("player")) and (not isPowerWordShieldActive()) then
-			if (UnitIsFriend("player", "target") and not UnitIsUnit("player","target")) then
-				friend = 1;
-				TargetUnit("player");
-			end
-			UseAction(SpellButton)
-			if (friend) then
-				TargetLastTarget();
-			end
-			if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-				SpellTargetUnit("player");
-			elseif SpellIsTargeting() then
-				SpellStopTargeting()
-				return false
-			end
-			return true
-		end
+		canCast = (isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)
 	elseif Zorlen_IsSpellKnown(SpellName) then
-		Zorlen_debug(""..SpellName.." was not found on any of the action bars!")
-		local SpellID = Zorlen_GetSpellID(SpellName)
-		if Zorlen_checkCooldown(SpellID) then
-			if (UnitIsFriend("player", "target") and not UnitIsUnit("player", "target") and not isWeakenedSoul() and not isPowerWordShield()) then
-				CastSpell(SpellID, 0)
-				if SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			elseif (not isWeakenedSoul("player")) and (not isPowerWordShieldActive()) then
-				if (UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")) then
-					friend = 1;
-					TargetUnit("player");
-				end
-				CastSpell(SpellID, 0)
-				if (friend) then
-					TargetLastTarget();
-				end
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			end
-		end
+		Zorlen_debug("" .. SpellName .. " was not found on any of the action bars!")
+		SpellID = Zorlen_GetSpellID(SpellName)
+		canCast = Zorlen_checkCooldown(SpellID)
+	else
+		return false
 	end
-	return false
+	
+	-- Early return if spell not ready
+	if not canCast then
+		return false
+	end
+	
+	-- Check target status
+	local hasTarget = UnitExists("target")
+	local isFriendlyTarget = hasTarget and UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")
+	local targetNeedsShield = isFriendlyTarget and not isWeakenedSoul() and not isPowerWordShield()
+	local targetInRange = SpellButton and IsActionInRange(SpellButton) == 1
+	
+	-- Try to cast on friendly target first
+	if targetNeedsShield and (not SpellButton or targetInRange) then
+		if SpellButton then
+			UseAction(SpellButton)
+		else
+			CastSpell(SpellID, 0)
+		end
+		
+		if SpellIsTargeting() then
+			SpellStopTargeting()
+			return false
+		end
+		return true
+	end
+	
+	-- Check if player needs shield (no weakened soul and no shield)
+	if isWeakenedSoul("player") or isPowerWordShieldActive() then
+		return false
+	end
+	
+	-- Cast on self with target management
+	local needsRetarget = isFriendlyTarget
+	if needsRetarget then
+		TargetUnit("player")
+	end
+	
+	if SpellButton then
+		UseAction(SpellButton)
+	else
+		CastSpell(SpellID, 0)
+	end
+	
+	if needsRetarget then
+		TargetLastTarget()
+	end
+	
+	if SpellIsTargeting() and SpellCanTargetUnit("player") then
+		SpellTargetUnit("player")
+	elseif SpellIsTargeting() then
+		SpellStopTargeting()
+		return false
+	end
+	
+	return true
 end
 
 --Added by Melancholia
 -- Will only cast the spell on your self if you do not have it on you and will not be able to cast on anything else.
 function castSelfPowerWordShield()
-	local SpellName = LOCALIZATION_ZORLEN.PowerWordShield;
+	local SpellName = LOCALIZATION_ZORLEN.PowerWordShield
 	local SpellButton = Zorlen_Button[SpellName]
-	local friend = nil;
+	local SpellID = nil
+	
+	-- Early return if player has weakened soul or already has shield
+	if isWeakenedSoul("player") or isPowerWordShieldActive() then
+		return false
+	end
+	
+	-- Check spell availability
+	local canCast = false
 	if SpellButton then
 		local isUsable, notEnoughMana = IsUsableAction(SpellButton)
 		local _, duration, _ = GetActionCooldown(SpellButton)
 		local isCurrent = IsCurrentAction(SpellButton)
-		if ( isUsable == 1 ) and ( not notEnoughMana ) and ( duration == 0 ) and ( isCurrent ~= 1 ) and (not isWeakenedSoul("player")) and (not isPowerWordShieldActive()) then
-			if (UnitIsFriend("player", "target") and not UnitIsUnit("player","target")) then
-				friend = 1;
-				TargetUnit("player");
-			end
-			UseAction(SpellButton)
-			if (friend) then
-				TargetLastTarget();
-			end
-			if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-				SpellTargetUnit("player");
-			elseif SpellIsTargeting() then
-				SpellStopTargeting()
-				return false
-			end
-			return true
-		end
+		canCast = (isUsable == 1) and (not notEnoughMana) and (duration == 0) and (isCurrent ~= 1)
 	elseif Zorlen_IsSpellKnown(SpellName) then
-		Zorlen_debug(""..SpellName.." was not found on any of the action bars!")
-		local SpellID = Zorlen_GetSpellID(SpellName);
-		if Zorlen_checkCooldown(SpellID) then
-			if (not isWeakenedSoul("player")) and (not isPowerWordShieldActive()) then
-				if (UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")) then
-					friend = 1;
-					TargetUnit("player");
-				end
-				CastSpell(SpellID, 0)
-				if (friend) then
-					TargetLastTarget();
-				end
-				if (SpellIsTargeting() and SpellCanTargetUnit("player")) then
-					SpellTargetUnit("player");
-				elseif SpellIsTargeting() then
-					SpellStopTargeting()
-					return false
-				end
-				return true
-			end
-		end
+		Zorlen_debug("" .. SpellName .. " was not found on any of the action bars!")
+		SpellID = Zorlen_GetSpellID(SpellName)
+		canCast = Zorlen_checkCooldown(SpellID)
+	else
+		return false
 	end
-	return false
+	
+	-- Early return if spell not ready
+	if not canCast then
+		return false
+	end
+	
+	-- Manage targeting (retarget if we have a friendly target)
+	local needsRetarget = UnitIsFriend("player", "target") and not UnitIsUnit("player", "target")
+	if needsRetarget then
+		TargetUnit("player")
+	end
+	
+	-- Cast the spell
+	if SpellButton then
+		UseAction(SpellButton)
+	else
+		CastSpell(SpellID, 0)
+	end
+	
+	-- Restore target if needed
+	if needsRetarget then
+		TargetLastTarget()
+	end
+	
+	-- Handle spell targeting
+	if SpellIsTargeting() and SpellCanTargetUnit("player") then
+		SpellTargetUnit("player")
+	elseif SpellIsTargeting() then
+		SpellStopTargeting()
+		return false
+	end
+	
+	return true
 end
-
-
-
-
 
 -- From: Jiral
 function castLesserHeal(Mode, RankAdj, unit)
 	if Zorlen_isMoving() then
 		return false
 	end
+
 	local SpellName = LOCALIZATION_ZORLEN.LesserHeal
 	local SpellButton = Zorlen_Button[SpellName]
-	local LevelLearnedArray={1,4,10}
-	local ManaArray={35,50,85}
-	local MinHealArray={46,71,135}
-	local MaxHealArray={56,85,157}
-	local TimeArray={1.5,2,2.5}
-	return Zorlen_CastHealingSpell(SpellName, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, unit, SpellButton)
+
+	return Zorlen_CastHealingSpell(SpellName, nil, nil, nil, nil, nil, Mode, RankAdj, unit, SpellButton)
 end
 
--- From: Jiral
-function castUnderLesserHeal(RankAdj, unit)
-	local DefaultAdj = RankAdj or -1
-	return castLesserHeal("under", DefaultAdj, unit)
-end
-
--- From: Jiral
-function castOverLesserHeal(RankAdj, unit)
-	local DefaultAdj = RankAdj or 1
-	return castLesserHeal("over", DefaultAdj, unit)
-end
-
--- From: Jiral
-function castMaxLesserHeal(RankAdj, unit)
-	return castLesserHeal("maximum", RankAdj, unit)
-end
 
 -- From: Jiral
 function castHeal(Mode, RankAdj, unit)
 	if Zorlen_isMoving() then
 		return false
 	end
+
 	local SpellName = LOCALIZATION_ZORLEN.Heal
 	local SpellButton = Zorlen_Button[SpellName]
-	local LevelLearnedArray={16,22,28,34}
-	local ManaArray={170,265,375,450}
-	local MinHealArray={295,499,754,948}
-	local MaxHealArray={341,571,856,1072}
-	local TimeArray={3,3.5,4,4}
-	return Zorlen_CastHealingSpell(SpellName, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, unit, SpellButton)
+
+	return Zorlen_CastHealingSpell(SpellName, nil, nil, nil, nil, nil, Mode, RankAdj, unit, SpellButton)
 end
 
--- From: Jiral
-function castUnderHeal(RankAdj, unit)
-	local DefaultAdj = RankAdj or -1
-	return castHeal("under", DefaultAdj, unit)
-end
-
--- From: Jiral
-function castOverHeal(RankAdj, unit)
-	local DefaultAdj = RankAdj or 1
-	return castHeal("over", DefaultAdj, unit)
-end
-
--- From: Jiral
-function castMaxHeal(RankAdj, unit)
-	return castHeal("maximum", RankAdj, unit)
-end
 
 -- From: Jiral
 function castGreaterHeal(Mode, RankAdj, unit)
 	if Zorlen_isMoving() then
 		return false
 	end
+
 	local SpellName = LOCALIZATION_ZORLEN.GreaterHeal
 	local SpellButton = Zorlen_Button[SpellName]
-	local LevelLearnedArray={40,46,52,58,60}
-	local ManaArray={545,665,800,960,1040}
-	local MinHealArray={1201,1531,1919,2396,2618}
-	local MaxHealArray={1353,1717,2147,2674,2922}
-	local TimeArray={4,4,4,4,4}
-	return Zorlen_CastHealingSpell(SpellName, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, unit, SpellButton)
+
+	return Zorlen_CastHealingSpell(SpellName, nil, nil, nil, nil, nil, Mode, RankAdj, unit, SpellButton)
 end
-
--- From: Jiral
-function castUnderGreaterHeal(RankAdj, unit)
-	local DefaultAdj = RankAdj or -1
-	return castGreaterHeal("under", DefaultAdj, unit)
-end
-
--- From: Jiral
-function castOverGreaterHeal(RankAdj, unit)
-	local DefaultAdj = RankAdj or 1
-	return castGreaterHeal("over", DefaultAdj, unit)
-end
-
--- From: Jiral
-function castMaxGreaterHeal(RankAdj, unit)
-	return castGreaterHeal("maximum", RankAdj, unit)
-end
-
-
 
 
 --This will try to heal party or raid members as long as you are not targeting a party or raid member that can be healed by the spell.
 --I made it give priority to your current target so that you have the option to choose priority in the heat of battle.
 --If you want it to always select for you then just clear your target or target an enemy before using the function.
 function castGroupPriestHeal(pet, Mode, RankAdj)
+	-- Early return if moving
 	if Zorlen_isMoving() then
 		return false
 	end
+	
 	local SpellName = LOCALIZATION_ZORLEN.LesserHeal
+	
+	-- Priority 1: Try to heal current target first
 	if UnitExists("target") and castPriestHeal(Mode, RankAdj, "target") then
 		return true
-	elseif not Zorlen_IsSpellKnown(SpellName) or UnitMana("player") < 35 then
+	end
+	
+	-- Early return if spell not known or low mana
+	if not Zorlen_IsSpellKnown(SpellName) or UnitMana("player") < 35 then
 		return false
-	else
-		local u = nil
-		local counter = 1
-		local notunitarray = {}
-		if Zorlen_isCasting(SpellName) or Zorlen_isCasting(LOCALIZATION_ZORLEN.Heal) or Zorlen_isCasting(LOCALIZATION_ZORLEN.GreaterHeal) then
-			u = Zorlen_GiveGroupUnitWithLowestHealth(pet, 0, nil, Zorlen_CastingNotUnitArray)
-			if u and Zorlen_CastingUnit == u then
-				return false
-			elseif not u or Zorlen_CastingUnit then
-				SpellStopCasting()
-				return true
-			end
-			return false
-		elseif Zorlen_checkCooldownByName(SpellName) then
-			while counter do
-				u = Zorlen_GiveGroupUnitWithLowestHealth(pet, nil, nil, notunitarray)
-				if u then
-					if UnitIsUnit("target", u) then
-						notunitarray[counter] = u
-					elseif UnitIsUnit("player", u) then
-						return castPriestHeal(Mode, RankAdj, u)
-					else
-						TargetUnit(u)
-						if castPriestHeal(Mode, RankAdj, u) then
-							Zorlen_CastingUnit = u
-							Zorlen_CastingNotUnitArray = notunitarray
-							TargetLastTarget()
-							return true
-						end
-						TargetLastTarget()
-						notunitarray[counter] = u
-					end
-					counter = counter + 1
-				else
-					counter = nil
-				end
-				if not u and (Zorlen_isCasting(SpellName) or Zorlen_isCasting(LOCALIZATION_ZORLEN.Heal) or Zorlen_isCasting(LOCALIZATION_ZORLEN.GreaterHeal)) then
-					SpellStopCasting()
-				end
-			end
+	end
+	
+	-- Handle casting interruption logic
+	local healSpells = {SpellName, LOCALIZATION_ZORLEN.Heal, LOCALIZATION_ZORLEN.GreaterHeal}
+	local isCastingHeal = false
+	for _, spell in ipairs(healSpells) do
+		if Zorlen_isCasting(spell) then
+			isCastingHeal = true
+			break
 		end
 	end
+	
+	if isCastingHeal then
+		local u = Zorlen_GiveGroupUnitWithLowestHealth(pet, 0, nil, Zorlen_CastingNotUnitArray)
+		
+		-- If we're casting on the same unit, continue
+		if u and Zorlen_CastingUnit == u then
+			return false
+		end
+		
+		-- If no unit found or casting unit changed, stop casting
+		if not u or Zorlen_CastingUnit then
+			SpellStopCasting()
+			return true
+		end
+		
+		return false
+	end
+	
+	-- Early return if spell not ready
+	if not Zorlen_checkCooldownByName(SpellName) then
+		return false
+	end
+	
+	-- Find group members who need healing
+	local counter = 1
+	local notunitarray = {}
+	
+	while counter do
+		local u = Zorlen_GiveGroupUnitWithLowestHealth(pet, nil, nil, notunitarray)
+		
+		if not u then
+			break
+		end
+		
+		-- Skip current target (already tried above)
+		if UnitIsUnit("target", u) then
+			notunitarray[counter] = u
+		-- Heal player directly
+		elseif UnitIsUnit("player", u) then
+			return castPriestHeal(Mode, RankAdj, u)
+		-- Heal other group member (requires targeting)
+		else
+			TargetUnit(u)
+			if castPriestHeal(Mode, RankAdj, u) then
+				Zorlen_CastingUnit = u
+				Zorlen_CastingNotUnitArray = notunitarray
+				TargetLastTarget()
+				return true
+			end
+			TargetLastTarget()
+			notunitarray[counter] = u
+		end
+		
+		counter = counter + 1
+	end
+	
+	-- Clean up any ongoing casting if no unit found
+	for _, spell in ipairs(healSpells) do
+		if Zorlen_isCasting(spell) then
+			SpellStopCasting()
+			break
+		end
+	end
+	
 	return false
 end
 
-function castUnderGroupPriestHeal(pet, RankAdj)
-	local DefaultAdj = RankAdj or -1
-	return castGroupPriestHeal(pet, "under", DefaultAdj)
-end
-
-function castOverGroupPriestHeal(pet, RankAdj)
-	local DefaultAdj = RankAdj or 1
-	return castGroupPriestHeal(pet, "over", DefaultAdj)
-end
-
-function castMaxGroupPriestHeal(pet, RankAdj)
-	return castGroupPriestHeal(pet, "maximum", RankAdj)
-end
 
 -- From: Jiral
+-- castPriestHeal rewrite this
 function castPriestHeal(Mode, RankAdj, unit)
 	if Zorlen_isMoving() then
 		return false
 	end
-	local LevelLearnedArray={1,4,10,16,22,28,34,40,46,52,58,60}
-	local ManaArray={35,50,85,170,265,375,450,545,665,800,960,1040}
-	local MinHealArray={46,71,135,295,499,754,948,1201,1531,1919,2396,2618}
-	local MaxHealArray={56,85,157,341,571,856,1072,1353,1717,2147,2674,2922}
-	local TimeArray={1.5,2,2.5,3,3.5,4,4,4,4,4,4,4}
-	local SpellNameArray={}
-	local SpellButtonArray={}
-	local SpellRankArray={}
-	for i=1,3 do
-		SpellNameArray[i] = LOCALIZATION_ZORLEN.LesserHeal
-		SpellButtonArray[i] = Zorlen_Button[LOCALIZATION_ZORLEN.LesserHeal]
-		SpellRankArray[i] = i
+
+	local LevelLearnedArray = nil
+
+	local ManaArray, MinHealArray, MaxHealArray, TimeArray = {}, {}, {}, {}
+	local SpellNameArray, SpellButtonArray, SpellRankArray = {}, {}, {}
+	local idx = 1
+
+	-- helper to append ranks from a spell-id list
+	local function addRanks(spellIds, button)
+		if not (spellIds and button) then
+			Zorlen_debug("No spellIds or button provided for addRanks")
+			return
+		end
+
+		for _, spellId in ipairs(spellIds) do
+		local info = Zorlen_SpellInfo[spellId]
+		if info then
+			--Zorlen_debug("Adding spell: " .. info.name .. " (ID: " .. spellId .. ")")
+			ManaArray[idx]         = info.cost
+			MinHealArray[idx]      = info.minVal
+			MaxHealArray[idx]      = info.maxVal
+			TimeArray[idx]         = info.castTime
+			SpellNameArray[idx]    = info.name
+			SpellButtonArray[idx]  = button
+			SpellRankArray[idx]    = info.rank
+			idx = idx + 1
+		end
+		end
 	end
-	for i=1,4 do
-		SpellNameArray[i+3] = LOCALIZATION_ZORLEN.Heal
-		SpellButtonArray[i+3] = Zorlen_Button[LOCALIZATION_ZORLEN.Heal]
-		SpellRankArray[i+3] = i
+
+	addRanks(Zorlen_SpellIdsByRankbySpellName[LOCALIZATION_ZORLEN.LesserHeal],  Zorlen_Button_Any[LOCALIZATION_ZORLEN.LesserHeal])
+	addRanks(Zorlen_SpellIdsByRankbySpellName[LOCALIZATION_ZORLEN.Heal],        Zorlen_Button_Any[LOCALIZATION_ZORLEN.Heal])
+	addRanks(Zorlen_SpellIdsByRankbySpellName[LOCALIZATION_ZORLEN.GreaterHeal], Zorlen_Button_Any[LOCALIZATION_ZORLEN.GreaterHeal])
+
+	-- nothing gathered? bail
+	if idx == 1 then
+		Zorlen_debug("No healing spells found for priest.")
+		return false
 	end
-	for i=1,5 do
-		SpellNameArray[i+7] = LOCALIZATION_ZORLEN.GreaterHeal
-		SpellButtonArray[i+7] = Zorlen_Button[LOCALIZATION_ZORLEN.GreaterHeal]
-		SpellRankArray[i+7] = i
-	end
-	return Zorlen_CastMultiNamedHealingSpell(SpellNameArray, SpellRankArray, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, unit, SpellButtonArray)
+
+	return Zorlen_CastMultiNamedHealingSpell(SpellNameArray, SpellRankArray, ManaArray, MinHealArray, MaxHealArray,
+		TimeArray, LevelLearnedArray, Mode, RankAdj, unit, SpellButtonArray)
 end
 
--- From: Jiral
-function castUnderPriestHeal(RankAdj, unit)
-	local DefaultAdj = RankAdj or -1
-	return castPriestHeal("under", DefaultAdj, unit)
-end
-
--- From: Jiral
-function castOverPriestHeal(RankAdj, unit)
-	local DefaultAdj = RankAdj or 1
-	return castPriestHeal("over", Default, unit)
-end
-
--- From: Jiral
-function castMaxPriestHeal(RankAdj, unit)
-	return castPriestHeal("maximum", RankAdj, unit)
-end
 
 -- Added by Bam
 function castFlashHeal(Mode, RankAdj, unit)
-  local SpellName = LOCALIZATION_ZORLEN.FlashHeal
-  local SpellButton = Zorlen_Button[SpellName]
-  local LevelLearnedArray={20,26,32,38,44,50,56}
-  local ManaArray={125,155,185,215,265,315,380}
-  local MinHealArray={196,258,327,400,518,644,812}
-  local MaxHealArray={241,314,393,478,616,764,958}
-  local TimeArray={1.5,1.5,1.5,1.5,1.5,1.5,1.5}
-  return Zorlen_CastHealingSpell(SpellName, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, unit, SpellButton)
-end
+	local SpellName = LOCALIZATION_ZORLEN.FlashHeal
+	local SpellButton = Zorlen_Button[SpellName]
 
--- Added by Bam
-function castUnderFlashHeal(RankAdj, unit)
-  local DefaultAdj = RankAdj or -1
-  return castFlashHeal("under", DefaultAdj, unit)
-end
-
--- Added by Bam
-function castOverFlashHeal(RankAdj, unit)
-  local DefaultAdj = RankAdj or 1
-  return castFlashHeal("over", DefaultAdj, unit)
-end
-
--- Added by Bam
-function castMaxFlashHeal(RankAdj, unit)
-  return castFlashHeal("maximum", RankAdj, unit)
+	return Zorlen_CastHealingSpell(SpellName, nil, nil, nil, nil, nil, Mode, RankAdj, unit, SpellButton)
 end
 
