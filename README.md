@@ -206,3 +206,175 @@ Zorlen Functions Library
 - `RankAdj`: Rank adjustment (-1 for lower ranks, +1 for higher ranks)
 - `unit`: Target unit ("target", "player", "party1", etc.)
 - Most functions include `test` parameter for dry-run testing
+
+## Pets
+
+### Hunter Pet Spells
+
+| Function | Spell Name | Description | Type |
+|----------|-------------|-------------|------|
+| `zDash()` | `Dash` | Casts pet Dash ability | Hunter |
+| `zDashAutocastOn()` | `Dash` | Enables autocast for Dash | Hunter |
+| `zDashAutocastOff()` | `Dash` | Disables autocast for Dash | Hunter |
+| `zDive()` | `Dive` | Casts pet Dive ability | Hunter |
+| `zDiveAutocastOn()` | `Dive` | Enables autocast for Dive | Hunter |
+| `zDiveAutocastOff()` | `Dive` | Disables autocast for Dive | Hunter |
+| `zCharge()` | `Charge` | Casts pet Charge ability | Hunter |
+| `zChargeAutocastOn()` | `Charge` | Enables autocast for Charge | Hunter |
+| `zChargeAutocastOff()` | `Charge` | Disables autocast for Charge | Hunter |
+| `zBite()` | `Bite` | Casts pet Bite ability | Hunter |
+| `zBiteAutocastOn()` | `Bite` | Enables autocast for Bite | Hunter |
+| `zBiteAutocastOff()` | `Bite` | Disables autocast for Bite | Hunter |
+| `zClaw()` | `Claw` | Casts pet Claw ability | Hunter |
+| `zClawAutocastOn()` | `Claw` | Enables autocast for Claw | Hunter |
+| `zClawAutocastOff()` | `Claw` | Disables autocast for Claw | Hunter |
+| `zCower()` | `Cower` | Casts pet Cower ability | Hunter |
+| `zCowerAutocastOn()` | `Cower` | Enables autocast for Cower | Hunter |
+| `zCowerAutocastOff()` | `Cower` | Disables autocast for Cower | Hunter |
+| `zGrowl()` | `Growl` | Casts pet Growl ability | Hunter |
+| `zGrowlAutocastOn()` | `Growl` | Enables autocast for Growl | Hunter |
+| `zGrowlAutocastOff()` | `Growl` | Disables autocast for Growl | Hunter |
+| `zProwl()` | `Prowl` | Casts pet Prowl ability (out of combat only) | Hunter |
+| `zProwlAutocastOn()` | `Prowl` | Enables autocast for Prowl | Hunter |
+| `zProwlAutocastOff()` | `Prowl` | Disables autocast for Prowl | Hunter |
+| `zScreech()` | `Screech` | Casts pet Screech ability | Hunter |
+| `zScreechAutocastOn()` | `Screech` | Enables autocast for Screech | Hunter |
+| `zScreechAutocastOff()` | `Screech` | Disables autocast for Screech | Hunter |
+| `zThunderstomp()` | `Thunderstomp` | Casts pet Thunderstomp ability | Hunter |
+| `zThunderstompAutocastOn()` | `Thunderstomp` | Enables autocast for Thunderstomp | Hunter |
+| `zThunderstompAutocastOff()` | `Thunderstomp` | Disables autocast for Thunderstomp | Hunter |
+| `zFuriousHowl()` | `Furious Howl` | Casts pet Furious Howl ability | Hunter |
+| `zFuriousHowlAutocastOn()` | `Furious Howl` | Enables autocast for Furious Howl | Hunter |
+| `zFuriousHowlAutocastOff()` | `Furious Howl` | Disables autocast for Furious Howl | Hunter |
+| `zShellShield()` | `Shell Shield` | Casts pet Shell Shield ability | Hunter |
+| `zShellShieldAutocastOn()` | `Shell Shield` | Enables autocast for Shell Shield | Hunter |
+| `zShellShieldAutocastOff()` | `Shell Shield` | Disables autocast for Shell Shield | Hunter |
+| `zLightningBreath()` | `Lightning Breath` | Casts pet Lightning Breath ability | Hunter |
+| `zLightningBreathAutocastOn()` | `Lightning Breath` | Enables autocast for Lightning Breath | Hunter |
+| `zLightningBreathAutocastOff()` | `Lightning Breath` | Disables autocast for Lightning Breath | Hunter |
+| `zScorpidPoison()` | `Scorpid Poison` | Casts pet Scorpid Poison ability | Hunter |
+| `zScorpidPoisonAutocastOn()` | `Scorpid Poison` | Enables autocast for Scorpid Poison | Hunter |
+| `zScorpidPoisonAutocastOff()` | `Scorpid Poison` | Disables autocast for Scorpid Poison | Hunter |
+
+### Warlock Pet Spells
+
+| Function | Spell Name | Description | Type |
+|----------|-------------|-------------|------|
+| `zFireShield()` | `Fire Shield` | Casts Fire Shield (checks if target needs it) | Warlock |
+| `zFireShieldAutocastOn()` | `Fire Shield` | Enables autocast for Fire Shield | Warlock |
+| `zFireShieldAutocastOff()` | `Fire Shield` | Disables autocast for Fire Shield | Warlock |
+| `zBloodPact()` | `Blood Pact` | Casts pet Blood Pact ability | Warlock |
+| `zBloodPactAutocastOn()` | `Blood Pact` | Enables autocast for Blood Pact | Warlock |
+| `zBloodPactAutocastOff()` | `Blood Pact` | Disables autocast for Blood Pact | Warlock |
+| `zFirebolt()` | `Firebolt` | Casts pet Firebolt ability | Warlock |
+| `zFireboltAutocastOn()` | `Firebolt` | Enables autocast for Firebolt | Warlock |
+| `zFireboltAutocastOff()` | `Firebolt` | Disables autocast for Firebolt | Warlock |
+| `zPhaseShift()` | `Phase Shift` | Casts pet Phase Shift ability | Warlock |
+| `zPhaseShiftAutocastOn()` | `Phase Shift` | Enables autocast for Phase Shift | Warlock |
+| `zPhaseShiftAutocastOff()` | `Phase Shift` | Disables autocast for Phase Shift | Warlock |
+| `zConsumeShadows()` | `Consume Shadows` | Casts Consume Shadows (checks buff status) | Warlock |
+| `zSacrifice()` | `Sacrifice` | Casts pet Sacrifice ability | Warlock |
+| `zSuffering()` | `Suffering` | Casts pet Suffering ability | Warlock |
+| `zSufferingAutocastOn()` | `Suffering` | Enables autocast for Suffering | Warlock |
+| `zSufferingAutocastOff()` | `Suffering` | Disables autocast for Suffering | Warlock |
+| `zTorment()` | `Torment` | Casts pet Torment ability | Warlock |
+| `zTormentAutocastOn()` | `Torment` | Enables autocast for Torment | Warlock |
+| `zTormentAutocastOff()` | `Torment` | Disables autocast for Torment | Warlock |
+| `zDevourMagic()` | `Devour Magic` | Casts pet Devour Magic ability | Warlock |
+| `zDevourMagicAutocastOn()` | `Devour Magic` | Enables autocast for Devour Magic | Warlock |
+| `zDevourMagicAutocastOff()` | `Devour Magic` | Disables autocast for Devour Magic | Warlock |
+| `zParanoia()` | `Paranoia` | Casts Paranoia (checks buff status) | Warlock |
+| `zParanoiaAutocastOn()` | `Paranoia` | Enables autocast for Paranoia | Warlock |
+| `zParanoiaAutocastOff()` | `Paranoia` | Disables autocast for Paranoia | Warlock |
+| `zSpellLock()` | `Spell Lock` | Casts pet Spell Lock ability | Warlock |
+| `zSpellLockAutocastOn()` | `Spell Lock` | Enables autocast for Spell Lock | Warlock |
+| `zSpellLockAutocastOff()` | `Spell Lock` | Disables autocast for Spell Lock | Warlock |
+| `zTaintedBlood()` | `Tainted Blood` | Casts Tainted Blood (checks buff status) | Warlock |
+| `zTaintedBloodAutocastOn()` | `Tainted Blood` | Enables autocast for Tainted Blood | Warlock |
+| `zTaintedBloodAutocastOff()` | `Tainted Blood` | Disables autocast for Tainted Blood | Warlock |
+| `zLashOfPain()` | `Lash of Pain` | Casts pet Lash of Pain ability | Warlock |
+| `zLashOfPainAutocastOn()` | `Lash of Pain` | Enables autocast for Lash of Pain | Warlock |
+| `zLashOfPainAutocastOff()` | `Lash of Pain` | Disables autocast for Lash of Pain | Warlock |
+| `zSeduction()` | `Seduction` | Casts Seduction (checks creature type) | Warlock |
+| `zSeductionAutocastOn()` | `Seduction` | Enables autocast for Seduction | Warlock |
+| `zSeductionAutocastOff()` | `Seduction` | Disables autocast for Seduction | Warlock |
+| `zSoothingKiss()` | `Soothing Kiss` | Casts pet Soothing Kiss ability | Warlock |
+| `zSoothingKissAutocastOn()` | `Soothing Kiss` | Enables autocast for Soothing Kiss | Warlock |
+| `zSoothingKissAutocastOff()` | `Soothing Kiss` | Disables autocast for Soothing Kiss | Warlock |
+| `zLesserInvisibility()` | `Lesser Invisibility` | Casts Lesser Invisibility (checks buff status) | Warlock |
+| `zLesserInvisibilityAutocastOn()` | `Lesser Invisibility` | Enables autocast for Lesser Invisibility | Warlock |
+| `zLesserInvisibilityAutocastOff()` | `Lesser Invisibility` | Disables autocast for Lesser Invisibility | Warlock |
+
+### Pet Management Functions
+
+| Function | Description | Parameters |
+|----------|-------------|------------|
+| `zAutoCower(PetHealthPercent)` | Automatically manages Cower autocast based on pet health | `PetHealthPercent` (default: 33%) |
+| `zAutoGrowl(PetHealthPercent)` | Automatically manages Growl autocast based on pet health | `PetHealthPercent` (default: 33%) |
+| `zAutoConsumeShadows(PetHealthPercent)` | Auto-casts Consume Shadows when conditions are met | `PetHealthPercent` (default: 30%) |
+| `zAutoSacrifice(PlayerHealthPercent, PetHealthPercent, OnlyIfTargeting)` | Auto-casts Sacrifice based on health thresholds | Player HP% (30%), Pet HP% (20%), targeting check |
+
+### Pet Utility Functions
+
+| Function | Description |
+|----------|-------------|
+| `Zorlen_castPetSpell(SpellName)` | Core function to cast any pet spell with validation |
+| `Zorlen_IsPetSpellOnCooldown(SpellName)` | Checks if a pet spell is on cooldown |
+| `Zorlen_IsPetSpellAutocastEnabled(SpellName)` | Checks if autocast is enabled for a pet spell |
+| `Zorlen_TogglePetSpellAutocast(SpellName, mode)` | Toggles pet spell autocast ("on", "off", or toggle) |
+| `Zorlen_PetSpellAutocastOn(SpellName)` | Enables autocast for specified pet spell |
+| `Zorlen_PetSpellAutocastOff(SpellName)` | Disables autocast for specified pet spell |
+| `zIsGrowlOnCooldown()` | Checks if Growl is on cooldown |
+| `zIsGrowlAutocast()` | Checks if Growl autocast is enabled |
+| `isFireShield(unit, castable)` | Checks if Fire Shield buff is active on target |
+
+### Pet Combat Functions
+
+| Function | Description |
+|----------|-------------|
+| `Zorlen_AutoPetAttack(SwitchTargets)` | Automatically manages pet attack/follow behavior |
+| `Zorlen_PetAttack(NoTargetSwitch)` | Commands pet to attack with CC considerations |
+| `Zorlen_petInCombat()` | Returns true if pet is in combat |
+| `Zorlen_isPet(unit)` | Returns true if unit is a pet |
+| `Zorlen_isPetDead()` | Returns true if pet is dead |
+| `needPet()` | Calls/revives pet if needed |
+| `rezPet()` | Alias for needPet() |
+
+### Pet Test Functions
+
+| Function | Description |
+|----------|-------------|
+| `ZorlenPetsSanityCheck()` | Tests that all pet functions exist and are callable |
+| `ZorlenPetsGeneratedTest()` | Comprehensive test of all generated pet functions (80+ total) |
+| `ZorlenPetsCastTest()` | Dry run test for basic pet casting functions |
+
+### Pet Function Statistics
+
+- **Total Functions Generated**: 80+ (automatically generated from maps)
+- **Hunter Pet Functions**: 42 functions (14 spells × 3 functions each)
+- **Warlock Pet Functions**: 44+ functions (16 spells with varying autocast support)
+- **Utility Functions**: 15+ core pet management functions
+- **Auto-Management Functions**: 4 intelligent pet behavior functions
+
+**Note**: All pet functions include:
+- Automatic pet health/status validation
+- Resource cost checking (mana/focus)
+- Cooldown verification
+- Localization support
+- Debug output for troubleshooting
+
+**Usage Examples**:
+```lua
+-- Basic pet spell casting
+zBite()                    -- Cast Bite if conditions are met
+zGrowlAutocastOn()         -- Enable Growl autocast
+zFireShield()              -- Cast Fire Shield on valid target
+
+-- Auto-management
+zAutoCower(25)             -- Auto-manage Cower at 25% pet health
+zAutoSacrifice(20, 15, true) -- Auto-sacrifice at 20% player, 15% pet health
+
+-- Testing
+ZorlenPetsSanityCheck()    -- Validate all functions loaded
+ZorlenPetsCastTest()       -- Test basic functionality
+```

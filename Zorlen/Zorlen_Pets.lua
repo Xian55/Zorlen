@@ -1,5 +1,5 @@
 
-Zorlen_Pets_FileBuildNumber = 684
+Zorlen_Pets_FileBuildNumber = 685
 
 local PetActionCostDict = {}
 
@@ -133,30 +133,37 @@ end
 
 
 function Zorlen_TogglePetSpellAutocast(SpellName, mode)
-	local cost = nil
-	if not (UnitHealth("pet") > 0) then
+	if UnitHealth("pet") <= 0 then
 		Zorlen_debug("Your pet is not active or alive to use pet ability: "..SpellName)
 		return false
 	end
-	for i=1, NUM_PET_ACTION_SLOTS, 1 do
-		local slotName, subText, texture, isToken, isActive, autoCastAllowed, autoCastEnabled = GetPetActionInfo(i)
-		if (slotName and slotName == SpellName) then
-			if (mode == "on") then
+	
+	for i = 1, NUM_PET_ACTION_SLOTS do
+		local slotName, _, _, _, _, _, autoCastEnabled = GetPetActionInfo(i)
+		
+		if slotName and slotName == SpellName then
+			if mode == "on" then
 				if not autoCastEnabled then
 					TogglePetAutocast(i)
 					return true
 				end
-			elseif (mode == "off") then
+				return false
+			end
+			
+			if mode == "off" then
 				if autoCastEnabled then
 					TogglePetAutocast(i)
 					return true
 				end
-			else
-				TogglePetAutocast(i)
-				return true
+				return false
 			end
+			
+			-- Default toggle mode
+			TogglePetAutocast(i)
+			return true
 		end
 	end
+	
 	Zorlen_debug("Unable to locate pet ability: "..SpellName)
 	return false
 end
@@ -251,236 +258,299 @@ end
 zPetAttack = Zorlen_PetAttack
 
 
--- Hunter Pet Spells
+--------   All functions below this line will only load if you are using pet spells   --------
 
-function zDash()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Dash)
+local global = getfenv(0)
+local countFunctions = 0
+
+-- Map for Hunter Pet Spells with autocast support
+local HunterPetSpellMap = {
+	Dash = {key = "Dash", hasAutocast = true},
+	Dive = {key = "Dive", hasAutocast = true},
+	Charge = {key = "Charge", hasAutocast = true},
+	Bite = {key = "Bite", hasAutocast = true},
+	Claw = {key = "Claw", hasAutocast = true},
+	Cower = {key = "Cower", hasAutocast = true},
+	Growl = {key = "Growl", hasAutocast = true},
+	Prowl = {key = "Prowl", hasAutocast = true, combatCheck = true},
+	Screech = {key = "Screech", hasAutocast = true},
+	Thunderstomp = {key = "Thunderstomp", hasAutocast = true},
+	FuriousHowl = {key = "FuriousHowl", hasAutocast = true},
+	ShellShield = {key = "ShellShield", hasAutocast = true},
+	LightningBreath = {key = "LightningBreath", hasAutocast = true},
+	ScorpidPoison = {key = "ScorpidPoison", hasAutocast = true}
+}
+
+-- Map for Warlock Pet Spells
+local WarlockPetSpellMap = {
+	FireShield = {key = "FireShield", hasAutocast = true, hasBuffCheck = true, buffIcon = "Spell_Fire_FireArmor"},
+	BloodPact = {key = "BloodPact", hasAutocast = true},
+	Firebolt = {key = "Firebolt", hasAutocast = true},
+	PhaseShift = {key = "PhaseShift", hasAutocast = true},
+	ConsumeShadows = {key = "ConsumeShadows", hasBuffCheck = true, buffIcon = "Spell_Shadow_AntiShadow"},
+	Sacrifice = {key = "Sacrifice"},
+	Suffering = {key = "Suffering", hasAutocast = true},
+	Torment = {key = "Torment", hasAutocast = true},
+	DevourMagic = {key = "DevourMagic", hasAutocast = true},
+	Paranoia = {key = "Paranoia", hasAutocast = true, hasBuffCheck = true, buffIcon = "Spell_Shadow_AuraOfDarkness"},
+	SpellLock = {key = "SpellLock", hasAutocast = true},
+	TaintedBlood = {key = "TaintedBlood", hasAutocast = true, hasBuffCheck = true, buffIcon = "Spell_Shadow_LifeDrain"},
+	LashOfPain = {key = "LashOfPain", hasAutocast = true},
+	Seduction = {key = "Seduction", hasAutocast = true, creatureTypeCheck = "Humanoid"},
+	SoothingKiss = {key = "SoothingKiss", hasAutocast = true},
+	LesserInvisibility = {key = "LesserInvisibility", hasAutocast = true, hasBuffCheck = true, buffIcon = "Spell_Magic_LesserInvisibility"}
+}
+
+-- Generate Hunter pet spell functions
+for spellName, config in pairs(HunterPetSpellMap) do
+	do
+		local funcName = "z" .. spellName
+		local cfg = config
+		
+		-- Main casting function (e.g., zDash())
+		global[funcName] = function()
+			if cfg.combatCheck and Zorlen_inCombat() then
+				return false
+			end
+			local spellKey = LOCALIZATION_ZORLEN and LOCALIZATION_ZORLEN[cfg.key]
+			if not spellKey then return false end
+			return Zorlen_castPetSpell(spellKey)
+		end
+		
+		-- Autocast functions if supported
+		if cfg.hasAutocast then
+			global[funcName .. "AutocastOn"] = function()
+				local spellKey = LOCALIZATION_ZORLEN and LOCALIZATION_ZORLEN[cfg.key]
+				if not spellKey then return false end
+				return Zorlen_PetSpellAutocastOn(spellKey)
+			end
+			
+			global[funcName .. "AutocastOff"] = function()
+				local spellKey = LOCALIZATION_ZORLEN and LOCALIZATION_ZORLEN[cfg.key]
+				if not spellKey then return false end
+				return Zorlen_PetSpellAutocastOff(spellKey)
+			end
+			
+			countFunctions = countFunctions + 2
+		end
+		
+		countFunctions = countFunctions + 1
+	end
 end
 
-function zDashAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Dash)
+-- Generate Warlock pet spell functions
+for spellName, config in pairs(WarlockPetSpellMap) do
+	do
+		local funcName = "z" .. spellName
+		local cfg = config
+		
+		-- Main casting function with special logic
+		global[funcName] = function()
+			local spellKey = LOCALIZATION_ZORLEN and LOCALIZATION_ZORLEN[cfg.key]
+			if not spellKey then return false end
+			
+			-- Buff check logic for certain spells
+			if cfg.hasBuffCheck then
+				if cfg.key == "FireShield" then
+					if Zorlen_checkBuff(cfg.buffIcon, "target") or not UnitPlayerOrPetInParty("target") then
+						return false
+					end
+				elseif cfg.key == "ConsumeShadows" then
+					if Zorlen_checkBuff(cfg.buffIcon, "pet") or UnitHealth("pet") == UnitHealthMax("pet") then
+						return false
+					end
+				elseif Zorlen_checkBuff(cfg.buffIcon, "pet") then
+					return false
+				end
+			end
+			
+			-- Creature type check for Seduction
+			if cfg.creatureTypeCheck then
+				local targetUnit = UnitExists("pettarget") and "pettarget" or (Zorlen_isEnemy() and "target" or nil)
+				if not targetUnit then return false end
+				if UnitCreatureType(targetUnit) ~= cfg.creatureTypeCheck or Zorlen_isBreakOnDamageCC(targetUnit) then
+					return false
+				end
+			end
+			
+			return Zorlen_castPetSpell(spellKey)
+		end
+		
+		-- Autocast functions if supported
+		if cfg.hasAutocast then
+			global[funcName .. "AutocastOn"] = function()
+				local spellKey = LOCALIZATION_ZORLEN and LOCALIZATION_ZORLEN[cfg.key]
+				if not spellKey then return false end
+				return Zorlen_PetSpellAutocastOn(spellKey)
+			end
+			
+			global[funcName .. "AutocastOff"] = function()
+				local spellKey = LOCALIZATION_ZORLEN and LOCALIZATION_ZORLEN[cfg.key]
+				if not spellKey then return false end
+				return Zorlen_PetSpellAutocastOff(spellKey)
+			end
+			
+			countFunctions = countFunctions + 2
+		end
+		
+		countFunctions = countFunctions + 1
+	end
 end
 
-function zDashAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Dash)
+Zorlen_debug("Zorlen Pets successfully loaded " .. countFunctions .. " generated functions.", 1)
+
+-- Test commands for generated functions (max 255 chars each):
+-- /run print("zDash exists:", type(zDash)=="function")
+-- /run print("zBite exists:", type(zBite)=="function")
+-- /run print("zFireShield exists:", type(zFireShield)=="function")
+-- /run print("zSacrifice exists:", type(zSacrifice)=="function")
+-- /run print("zDashAutocastOn exists:", type(zDashAutocastOn)=="function")
+-- /run print("zFireShieldAutocastOff exists:", type(zFireShieldAutocastOff)=="function")
+
+-- Sanity check test functions:
+function ZorlenPetsSanityCheck()
+	local passed = 0
+	local total = 0
+	
+	print("=== Zorlen Pets Sanity Check ===")
+	
+	-- Test Hunter pet functions exist
+	local hunterPetFuncs = {"zDash", "zDive", "zCharge", "zBite", "zClaw", "zCower", "zGrowl", "zProwl", "zScreech", "zThunderstomp", "zFuriousHowl", "zShellShield", "zLightningBreath", "zScorpidPoison"}
+	for _, func in ipairs(hunterPetFuncs) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+			print("✓ " .. func .. " exists")
+		else
+			print("✗ " .. func .. " missing")
+		end
+	end
+	
+	-- Test Warlock pet functions exist
+	local warlockPetFuncs = {"zFireShield", "zBloodPact", "zFirebolt", "zPhaseShift", "zConsumeShadows", "zSacrifice", "zSuffering", "zTorment", "zDevourMagic", "zParanoia", "zSpellLock", "zTaintedBlood", "zLashOfPain", "zSeduction", "zSoothingKiss", "zLesserInvisibility"}
+	for _, func in ipairs(warlockPetFuncs) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+			print("✓ " .. func .. " exists")
+		else
+			print("✗ " .. func .. " missing")
+		end
+	end
+	
+	-- Test autocast functions exist
+	local autocastFuncs = {"zDashAutocastOn", "zDashAutocastOff", "zBiteAutocastOn", "zBiteAutocastOff", "zFireShieldAutocastOn", "zFireShieldAutocastOff"}
+	for _, func in ipairs(autocastFuncs) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+			print("✓ " .. func .. " exists")
+		else
+			print("✗ " .. func .. " missing")
+		end
+	end
+	
+	-- Test special functions exist
+	local specialFuncs = {"zAutoCower", "zAutoGrowl", "zAutoConsumeShadows", "zAutoSacrifice", "isFireShield"}
+	for _, func in ipairs(specialFuncs) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+			print("✓ " .. func .. " exists")
+		else
+			print("✗ " .. func .. " missing")
+		end
+	end
+	
+	print("=== Results: " .. passed .. "/" .. total .. " tests passed ===")
+	return passed == total
+end
+
+function ZorlenPetsGeneratedTest()
+	print("=== Generated Pet Functions Test ===")
+	local passed, total = 0, 0
+	
+	-- Test Hunter pet spell functions (14 base + 28 autocast = 42 functions)
+	local hunterTests = {"zDash", "zDashAutocastOn", "zDashAutocastOff", "zDive", "zDiveAutocastOn", "zDiveAutocastOff", "zCharge", "zChargeAutocastOn", "zChargeAutocastOff", "zBite", "zBiteAutocastOn", "zBiteAutocastOff", "zClaw", "zClawAutocastOn", "zClawAutocastOff", "zCower", "zCowerAutocastOn", "zCowerAutocastOff", "zGrowl", "zGrowlAutocastOn", "zGrowlAutocastOff", "zProwl", "zProwlAutocastOn", "zProwlAutocastOff", "zScreech", "zScreechAutocastOn", "zScreechAutocastOff", "zThunderstomp", "zThunderstompAutocastOn", "zThunderstompAutocastOff", "zFuriousHowl", "zFuriousHowlAutocastOn", "zFuriousHowlAutocastOff", "zShellShield", "zShellShieldAutocastOn", "zShellShieldAutocastOff", "zLightningBreath", "zLightningBreathAutocastOn", "zLightningBreathAutocastOff", "zScorpidPoison", "zScorpidPoisonAutocastOn", "zScorpidPoisonAutocastOff"}
+	for _, func in ipairs(hunterTests) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+		else
+			print("✗ " .. func)
+		end
+	end
+	
+	-- Test Warlock pet spell functions (16 base + varies autocast)
+	local warlockTests = {"zFireShield", "zFireShieldAutocastOn", "zFireShieldAutocastOff", "zBloodPact", "zBloodPactAutocastOn", "zBloodPactAutocastOff", "zFirebolt", "zFireboltAutocastOn", "zFireboltAutocastOff", "zPhaseShift", "zPhaseShiftAutocastOn", "zPhaseShiftAutocastOff", "zConsumeShadows", "zSacrifice", "zSuffering", "zSufferingAutocastOn", "zSufferingAutocastOff", "zTorment", "zTormentAutocastOn", "zTormentAutocastOff", "zDevourMagic", "zDevourMagicAutocastOn", "zDevourMagicAutocastOff", "zParanoia", "zParanoiaAutocastOn", "zParanoiaAutocastOff", "zSpellLock", "zSpellLockAutocastOn", "zSpellLockAutocastOff", "zTaintedBlood", "zTaintedBloodAutocastOn", "zTaintedBloodAutocastOff", "zLashOfPain", "zLashOfPainAutocastOn", "zLashOfPainAutocastOff", "zSeduction", "zSeductionAutocastOn", "zSeductionAutocastOff", "zSoothingKiss", "zSoothingKissAutocastOn", "zSoothingKissAutocastOff", "zLesserInvisibility", "zLesserInvisibilityAutocastOn", "zLesserInvisibilityAutocastOff"}
+	for _, func in ipairs(warlockTests) do
+		total = total + 1
+		if type(_G[func]) == "function" then
+			passed = passed + 1
+		else
+			print("✗ " .. func)
+		end
+	end
+	
+	print("Generated functions: " .. passed .. "/" .. total .. " passed")
+	print("Total functions loaded by maps: " .. countFunctions .. " (from debug output)")
+end
+
+function ZorlenPetsCastTest()
+	print("=== Pet Cast Function Test (DRY RUN) ===")
+	print("NOTE: These are test calls - no spells will be cast unless you have a pet")
+	
+	-- Test some basic functions (safe to test)
+	local testFuncs = {"zDash", "zBite", "zFireShield", "zConsumeShadows"}
+	for _, func in ipairs(testFuncs) do
+		if type(_G[func]) == "function" then
+			print("Testing " .. func .. ": callable")
+		else
+			print("✗ " .. func .. " not found")
+		end
+	end
+	
+	print("To test actual pet casting, ensure you have an active pet first")
+	print("Example usage: /run zDash() -- casts Dash if pet is available")
 end
 
 
-
-function zDive()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Dive)
-end
-
-function zDiveAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Dive)
-end
-
-
-function zDiveAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Dive)
-end
-
-
-function zCharge()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Charge)
-end
-
-function zChargeAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Charge)
-end
-
-function zChargeAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Charge)
-end
-
-
-
-function zBite()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Bite)
-end
-
-function zBiteAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Bite)
-end
-
-function zBiteAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Bite)
-end
-
-
-
-function zClaw()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Claw)
-end
-
-function zClawAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Claw)
-end
-
-function zClawAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Claw)
-end
-
-
-
-function zCower()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Cower)
-end
-
-
+-- Special auto-management functions with flattened logic
 function zAutoCower(PetHealthPercent)
 	local PetHP = PetHealthPercent or 33
-	if UnitHealth("pet") > 0 then
-		if UnitPlayerControlled("pettarget") or (UnitPlayerControlled("target") and not UnitExists("pettarget")) then
-			return zCowerAutocastOff()
-		elseif UnitHealth("pet") / UnitHealthMax("pet") <= PetHP / 100 and UnitIsUnit("pet", "pettargettarget") and UnitHealth("pet") < UnitHealth("player") then
-			return zCowerAutocastOn()
-		end
+	
+	if UnitHealth("pet") <= 0 then
+		return false
+	end
+	
+	if UnitPlayerControlled("pettarget") or (UnitPlayerControlled("target") and not UnitExists("pettarget")) then
 		return zCowerAutocastOff()
 	end
-	return false
+	
+	if UnitHealth("pet") / UnitHealthMax("pet") <= PetHP / 100 and UnitIsUnit("pet", "pettargettarget") and UnitHealth("pet") < UnitHealth("player") then
+		return zCowerAutocastOn()
+	end
+	
+	return zCowerAutocastOff()
 end
-
-function zCowerAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Cower)
-end
-
-function zCowerAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Cower)
-end
-
-
-
-function zGrowl()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Growl)
-end
-
 
 function zAutoGrowl(PetHealthPercent)
 	local PetHP = PetHealthPercent or 33
-	if UnitHealth("pet") > 0 then
-		if UnitPlayerControlled("pettarget") or (UnitPlayerControlled("target") and not UnitExists("pettarget")) then
-			return zGrowlAutocastOff()
-		elseif UnitHealth("pet") / UnitHealthMax("pet") > PetHP / 100 or UnitHealth("pet") >= UnitHealth("player") then
-			return zGrowlAutocastOn()
-		end
+	
+	if UnitHealth("pet") <= 0 then
+		return false
+	end
+	
+	if UnitPlayerControlled("pettarget") or (UnitPlayerControlled("target") and not UnitExists("pettarget")) then
 		return zGrowlAutocastOff()
 	end
-	return false
-end
-
-function zGrowlAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Growl)
-end
-
-function zGrowlAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Growl)
-end
-
-
-
-function zProwl()
-	if Zorlen_notInCombat() then
-		return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Prowl)
+	
+	if UnitHealth("pet") / UnitHealthMax("pet") > PetHP / 100 or UnitHealth("pet") >= UnitHealth("player") then
+		return zGrowlAutocastOn()
 	end
-	return false
+	
+	return zGrowlAutocastOff()
 end
-
-function zProwlAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Prowl)
-end
-
-function zProwlAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Prowl)
-end
-
-
-
-function zScreech()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Screech)
-end
-
-function zScreechAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Screech)
-end
-
-function zScreechAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Screech)
-end
-
-
-
-function zThunderstomp()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Thunderstomp)
-end
-
-function zThunderstompAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Thunderstomp)
-end
-
-function zThunderstompAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Thunderstomp)
-end
-
-
-
-function zFuriousHowl()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.FuriousHowl)
-end
-
-function zFuriousHowlAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.FuriousHowl)
-end
-
-function zFuriousHowlAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.FuriousHowl)
-end
-
-
-
-function zShellShield()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.ShellShield)
-end
-
-function zShellShieldAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.ShellShield)
-end
-
-function zShellShieldAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.ShellShield)
-end
-
-
-
-function zLightningBreath()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.LightningBreath)
-end
-
-function zLightningBreathAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.LightningBreath)
-end
-
-function zLightningBreathAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.LightningBreath)
-end
-
-
-
-function zScorpidPoison()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.ScorpidPoison)
-end
-
-function zScorpidPoisonAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.ScorpidPoison)
-end
-
-function zScorpidPoisonAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.ScorpidPoison)
-end
-
-
-
--- Warlock Pet Spells
 
 --Returns true if Fire Shield is active on the target
 function isFireShield(unit, castable)
@@ -488,250 +558,64 @@ function isFireShield(unit, castable)
 	return Zorlen_checkBuff("Spell_Fire_FireArmor", u, castable)
 end
 
-function zFireShield()
-	if not Zorlen_checkBuff("Spell_Fire_FireArmor", "target") and UnitPlayerOrPetInParty("target") then
-		return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.FireShield)
-	end
-	return false
-end
-
-function zFireShieldAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.FireShield)
-end
-
-function zFireShieldAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.FireShield)
-end
-
-
-
-function zBloodPact()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.BloodPact)
-end
-
-function zBloodPactAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.BloodPact)
-end
-
-function zBloodPactAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.BloodPact)
-end
-
-
-
-function zFirebolt()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Firebolt)
-end
-
-function zFireboltAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Firebolt)
-end
-
-function zFireboltAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Firebolt)
-end
-
-
-
-function zPhaseShift()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.PhaseShift)
-end
-
-function zPhaseShiftAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.PhaseShift)
-end
-
-function zPhaseShiftAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.PhaseShift)
-end
-
-
-
-function zConsumeShadows()
-	if not Zorlen_checkBuff("Spell_Shadow_AntiShadow", "pet") and not (UnitHealth("pet") == UnitHealthMax("pet")) then
-		return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.ConsumeShadows)
-	end
-	return false
-end
-
 function zAutoConsumeShadows(PetHealthPercent)
 	local PetHP = PetHealthPercent or 30
-	if Zorlen_notInCombat() and UnitCreatureFamily("pet") == LOCALIZATION_ZORLEN.Voidwalker and UnitHealth("pet") > 0 and UnitHealth("pet") / UnitHealthMax("pet") <= PetHP / 100 and not Zorlen_checkBuff("Spell_Shadow_AntiShadow", "pet") then
-		return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.ConsumeShadows)
+	
+	if Zorlen_inCombat() then
+		return false
 	end
-	return false
-end
-
-
-function zSacrifice()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Sacrifice)
+	
+	if UnitCreatureFamily("pet") ~= LOCALIZATION_ZORLEN.Voidwalker then
+		return false
+	end
+	
+	if UnitHealth("pet") <= 0 then
+		return false
+	end
+	
+	if UnitHealth("pet") / UnitHealthMax("pet") > PetHP / 100 then
+		return false
+	end
+	
+	if Zorlen_checkBuff("Spell_Shadow_AntiShadow", "pet") then
+		return false
+	end
+	
+	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.ConsumeShadows)
 end
 
 function zAutoSacrifice(PlayerHealthPercent, PetHealthPercent, OnlyIfYourTargetIsTargetingYou)
 	local PlayerHP = PlayerHealthPercent or 30
 	local PetHP = PetHealthPercent or 20
-	if Zorlen_inCombat() and UnitCreatureFamily("pet") == LOCALIZATION_ZORLEN.Voidwalker and UnitHealth("pet") > 0 and (UnitHealth("pet") / UnitHealthMax("pet") <= PetHP / 100 or ((not OnlyIfYourTargetIsTargetingYou or UnitIsUnit("player", "targettarget")) and UnitHealth("player") / UnitHealthMax("player") <= PlayerHP / 100)) and not Zorlen_checkDebuffByName(LOCALIZATION_ZORLEN.Banish, "pet") then
-		return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Sacrifice)
-	end
-	return false
-end
-
-
-
-function zSuffering()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Suffering)
-end
-
-function zSufferingAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Suffering)
-end
-
-function zSufferingAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Suffering)
-end
-
-
-
-function zTorment()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Torment)
-end
-
-function zTormentAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Torment)
-end
-
-function zTormentAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Torment)
-end
-
-
-
-function zDevourMagic()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.DevourMagic)
-end
-
-function zDevourMagicAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.DevourMagic)
-end
-
-function zDevourMagicAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.DevourMagic)
-end
-
-
-
-function zParanoia()
-	if not Zorlen_checkBuff("Spell_Shadow_AuraOfDarkness", "pet") then
-		return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Paranoia)
-	end
-	return false
-end
-
-function zParanoiaAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Paranoia)
-end
-
-function zParanoiaAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Paranoia)
-end
-
-
-
-function zSpellLock()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.SpellLock)
-end
-
-function zSpellLockAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.SpellLock)
-end
-
-function zSpellLockAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.SpellLock)
-end
-
-
-
-function zTaintedBlood()
-	if not Zorlen_checkBuff("Spell_Shadow_LifeDrain", "pet") then
-		return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.TaintedBlood)
-	end
-	return false
-end
-
-function zTaintedBloodAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.TaintedBlood)
-end
-
-function zTaintedBloodAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.TaintedBlood)
-end
-
-
-
-function zLashOfPain()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.LashOfPain)
-end
-
-function zLashOfPainAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.LashOfPain)
-end
-
-function zLashOfPainAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.LashOfPain)
-end
-
-
-
-function zSeduction()
-	if UnitExists("pettarget") then
-		if UnitCreatureType("pettarget") ~= "Humanoid" or Zorlen_isBreakOnDamageCC("pettarget") then
-			return false
-		end
-	elseif Zorlen_isEnemy() then
-		if UnitCreatureType("target") ~= "Humanoid" or Zorlen_isBreakOnDamageCC() then
-			return false
-		end
-	else
+	
+	if not Zorlen_inCombat() then
 		return false
 	end
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Seduction)
-end
-
-function zSeductionAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.Seduction)
-end
-
-function zSeductionAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.Seduction)
-end
-
-
-
-function zSoothingKiss()
-	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.SoothingKiss)
-end
-
-function zSoothingKissAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.SoothingKiss)
-end
-
-function zSoothingKissAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.SoothingKiss)
-end
-
-
-
-function zLesserInvisibility()
-	if not Zorlen_checkBuff("Spell_Magic_LesserInvisibility", "pet") then
-		return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.LesserInvisibility)
+	
+	if UnitCreatureFamily("pet") ~= LOCALIZATION_ZORLEN.Voidwalker then
+		return false
 	end
-	return false
+	
+	if UnitHealth("pet") <= 0 then
+		return false
+	end
+	
+	if Zorlen_checkDebuffByName(LOCALIZATION_ZORLEN.Banish, "pet") then
+		return false
+	end
+	
+	local petLowHealth = UnitHealth("pet") / UnitHealthMax("pet") <= PetHP / 100
+	local playerLowHealth = UnitHealth("player") / UnitHealthMax("player") <= PlayerHP / 100
+	local targetingCheck = not OnlyIfYourTargetIsTargetingYou or UnitIsUnit("player", "targettarget")
+	
+	if not (petLowHealth or (playerLowHealth and targetingCheck)) then
+		return false
+	end
+	
+	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Sacrifice)
 end
 
-function zLesserInvisibilityAutocastOn()
-	return Zorlen_PetSpellAutocastOn(LOCALIZATION_ZORLEN.LesserInvisibility)
-end
-
-function zLesserInvisibilityAutocastOff()
-	return Zorlen_PetSpellAutocastOff(LOCALIZATION_ZORLEN.LesserInvisibility)
+-- Legacy alias functions to maintain compatibility
+function zSacrifice()
+	return Zorlen_castPetSpell(LOCALIZATION_ZORLEN.Sacrifice)
 end

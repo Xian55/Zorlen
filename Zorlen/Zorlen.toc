@@ -1,5 +1,5 @@
 ## X-TocFileBuildNumber: 700
-## Version: 5.0.5
+## Version: 5.0.6
 ## Interface: 11200
 ## Title: Zorlen
 ## Author: Marcus S. Zarra / BigRedBrent / Xii
