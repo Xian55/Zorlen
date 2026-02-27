@@ -562,6 +562,7 @@ LOCALIZATION_ZORLEN = {}
 	LOCALIZATION_ZORLEN["Zeal"] = "Zeal"
 	LOCALIZATION_ZORLEN["CrusaderStrike"] = "Crusader Strike"
 	LOCALIZATION_ZORLEN["HolyStrike"] = "Holy Strike"
+	LOCALIZATION_ZORLEN["HolyMight"] = "Holy Might"
 
 
 

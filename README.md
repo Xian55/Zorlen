@@ -1,10 +1,11 @@
-# Zorlen
+﻿# Zorlen
 Zorlen Functions Library
 
 # Added support for Turtle WoW custom spells
 
 ## Paladin
 
+<!-- BEGIN PALADIN -->
 | Function | Spell Name | Description | Alias |
 |----------|-------------|-------------|--------|
 | `isDAA()` | `DevotionAura` | (no description) |  |
@@ -41,6 +42,7 @@ Zorlen Functions Library
 | `isRighteousFuryActive()` | `RighteousFury` | (no description) |  |
 | `isRedoubtActive()` | `Redoubt` | (no description) |  |
 | `isZealActive()` | `Zeal` | (no description) |  |
+| `isHMA()` | `HolyMight` | (no description) |  |
 | `castDA()` | `DevotionAura` | (no description) |  |
 | `castRA()` | `RetributionAura` | (no description) |  |
 | `castCA()` | `ConcentrationAura` | (no description) |  |
@@ -63,11 +65,13 @@ Zorlen Functions Library
 | `isSealActive()` | `-` | (no description) | `isSA()` |
 | `ZealCount()` | `-` | (no description) |  |
 | `ZealTimeLeft()` | `-` | (no description) |  |
+| `HolyMightTimeLeft()` | `-` | Returns the remaining duration of the Holy Might buff in seconds |  |
 | `castJudgement()` | `-` | Casts judgement if a seal is active |  |
 | `castDivineProtection()` | `-` | Divine Protection (not in cast map) |  |
 | `castHolyShield()` | `-` | (no description) |  |
 | `blessingForUnit()` | `-` | Auto blessing functions |  |
 | `castAutoBlessing()` | `-` | (no description) |  |
+<!-- END PALADIN -->
 
 ## Priest
 
@@ -351,7 +355,7 @@ Zorlen Functions Library
 ### Pet Function Statistics
 
 - **Total Functions Generated**: 80+ (automatically generated from maps)
-- **Hunter Pet Functions**: 42 functions (14 spells × 3 functions each)
+- **Hunter Pet Functions**: 42 functions (14 spells Ã— 3 functions each)
 - **Warlock Pet Functions**: 44+ functions (16 spells with varying autocast support)
 - **Utility Functions**: 15+ core pet management functions
 - **Auto-Management Functions**: 4 intelligent pet behavior functions

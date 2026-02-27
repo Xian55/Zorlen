@@ -51,7 +51,8 @@ local BuffCheckMap = {
 	isDivineProtectionActive = "DivineProtection",
 	isRighteousFuryActive = "RighteousFury",
 	isRedoubtActive = "Redoubt",
-	isZealActive = "Zeal"
+	isZealActive = "Zeal",
+	isHMA = "HolyMight"
 }
 
 for funcName, localizedKey in pairs(BuffCheckMap) do
@@ -172,6 +173,12 @@ end
 
 function ZealTimeLeft()
 	local SpellName = LOCALIZATION_ZORLEN.Zeal
+	return Zorlen_GetBuffTimeLeft_ByExactName(SpellName)
+end
+
+-- Returns the remaining duration of the Holy Might buff in seconds
+function HolyMightTimeLeft()
+	local SpellName = LOCALIZATION_ZORLEN.HolyMight
 	return Zorlen_GetBuffTimeLeft_ByExactName(SpellName)
 end
 

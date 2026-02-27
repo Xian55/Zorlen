@@ -1,5 +1,7 @@
 $luaPath = ".\Zorlen_Paladin.lua"
-$markdownPath = ".\Zorlen_Paladin_README.md"
+$readmePath = "..\README.md"
+$beginMarker = "<!-- BEGIN PALADIN -->"
+$endMarker = "<!-- END PALADIN -->"
 $lines = Get-Content $luaPath
 
 # Array to hold all function metadata
@@ -113,7 +115,26 @@ function Format-MarkdownTable {
 
     return $md
 }
-# Generate markdown and write to file
+
+# Generate markdown table content
 $markdownLines = Format-MarkdownTable -entryList $entries
-$markdownLines -join "`n" | Set-Content -Encoding UTF8 -Path $markdownPath
-Write-Host "README generated at $markdownPath"
+$generatedContent = $markdownLines -join "`n"
+
+# Insert into main README.md between markers
+if (Test-Path $readmePath) {
+    $readmeContent = Get-Content $readmePath -Raw
+
+    if ($readmeContent -match [regex]::Escape($beginMarker) -and $readmeContent -match [regex]::Escape($endMarker)) {
+        $pattern = "(?s)$([regex]::Escape($beginMarker)).*?$([regex]::Escape($endMarker))"
+        $replacement = "$beginMarker`n$generatedContent`n$endMarker"
+        $readmeContent = [regex]::Replace($readmeContent, $pattern, $replacement)
+        $readmeContent | Set-Content -Encoding UTF8 -NoNewline -Path $readmePath
+        Write-Host "README.md updated (Paladin section replaced between markers)"
+    } else {
+        Write-Host "ERROR: Markers not found in README.md. Expected '$beginMarker' and '$endMarker'"
+        exit 1
+    }
+} else {
+    Write-Host "ERROR: README.md not found at $readmePath"
+    exit 1
+}
