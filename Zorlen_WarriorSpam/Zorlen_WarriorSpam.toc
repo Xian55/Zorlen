@@ -1,5 +1,5 @@
 ## X-TocFileBuildNumber: 688
-## Version: 2.47.04
+## Version: 2.47.05
 ## Interface: 11200
 ## Title: Zorlen_WarriorSpam
 ## Author: BigRedBrent

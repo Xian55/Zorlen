@@ -1426,9 +1426,13 @@ function castPriestHeal(Mode, RankAdj, unit)
 			return
 		end
 
-		for _, spellId in ipairs(spellIds) do
-		local info = Zorlen_SpellInfo[spellId]
-		if info then
+		for _, spellId in ipairs(spellIds) do repeat
+			local info = Zorlen_SpellInfo[spellId]
+			if not info then
+				Zorlen_debug("No spell info found for spell ID: " .. tostring(spellId))
+				break
+			end
+
 			--Zorlen_debug("Adding spell: " .. info.name .. " (ID: " .. spellId .. ")")
 			ManaArray[idx]         = info.cost
 			MinHealArray[idx]      = info.minVal
@@ -1438,8 +1442,8 @@ function castPriestHeal(Mode, RankAdj, unit)
 			SpellButtonArray[idx]  = button
 			SpellRankArray[idx]    = info.rank
 			idx = idx + 1
-		end
-		end
+
+		until true end
 	end
 
 	addRanks(Zorlen_SpellIdsByRankbySpellName[LOCALIZATION_ZORLEN.LesserHeal],  Zorlen_Button_Any[LOCALIZATION_ZORLEN.LesserHeal])

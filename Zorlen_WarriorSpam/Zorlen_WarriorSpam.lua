@@ -782,13 +782,16 @@ function Zorlen_WarriorSpam_RegisterWarriorStance()
 	end
 	local i;
 	local max = GetNumShapeshiftForms();
-	for i = 1 , max do
+	for i = 1 , max do repeat
 		local _, name, isActive = GetShapeshiftFormInfo(i);
-		if isActive then
-			Zorlen_WarriorSpam_CurrentStance = name;
-			return;
+		if not isActive then
+			break
 		end
-	end
+
+		Zorlen_WarriorSpam_CurrentStance = name;
+		return
+
+	until true end
 	Zorlen_WarriorSpam_CurrentStance = "Default";
 end
 
@@ -852,15 +855,21 @@ function Zorlen_WarriorSpam_GetGroupPhysicalDamageClassUnitArray()
 	else
 		NumMembers = GetNumPartyMembers()
 	end
-	while counter <= NumMembers do
+	while counter <= NumMembers do repeat
 		u = group..""..counter
-		if UnitExists(u) then
-			c = Zorlen_UnitClass(u)
-			if (c == "Rogue") or (c == "Paladin") or (c == "Warrior") or (c == "Hunter") or ((c == "Druid") and (Zorlen_checkBuff("Ability_Druid_CatForm", u) or Zorlen_checkBuff("Ability_Racial_BearForm", u))) then
-				N = N + 1
-				GroupPhysicalDamageClassUnitArray[N] = u
-			end
+		if not UnitExists(u) then
+			break
 		end
+		
+		c = Zorlen_UnitClass(u)
+		if not ((c == "Rogue") or (c == "Paladin") or (c == "Warrior") or (c == "Hunter") or ((c == "Druid") and (Zorlen_checkBuff("Ability_Druid_CatForm", u) or Zorlen_checkBuff("Ability_Racial_BearForm", u)))) then
+			break
+		end
+		
+		N = N + 1
+		GroupPhysicalDamageClassUnitArray[N] = u
+		
+	until true
 		counter = counter + 1
 	end
 	Zorlen_debug("Group Physical Damage Class Count:  "..N);

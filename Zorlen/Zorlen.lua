@@ -3467,15 +3467,20 @@ function Zorlen_TargetNearestEnemy(mode, cycles, givesxp)
 				ClearTarget()
 				Zorlen_debug("Clearing Target!", 2)
 			end
-			while (counter <= number) do
+			while (counter <= number) do repeat
 				TargetNearestEnemy()
 				name = UnitName("target")
-				if Zorlen_isEnemyPlayer() and (not (UnitIsUnit("pet", "targettarget") and not UnitIsUnit("pettarget", "target")) or not UnitExists("pettarget")) then
-					Zorlen_debug("Player found for player targeting attempt #"..counter..": "..name)
-					return
-				elseif Zorlen_DebugFlag and name and Zorlen_isEnemy() then
-					Zorlen_debug("Player targeting attempt #"..counter..": "..name, 2)
+				if not (Zorlen_isEnemyPlayer() and (not (UnitIsUnit("pet", "targettarget") and not UnitIsUnit("pettarget", "target")) or not UnitExists("pettarget"))) then
+					if Zorlen_DebugFlag and name and Zorlen_isEnemy() then
+						Zorlen_debug("Player targeting attempt #"..counter..": "..name, 2)
+					end
+					break
 				end
+				
+				Zorlen_debug("Player found for player targeting attempt #"..counter..": "..name)
+				return
+				
+			until true
 				counter = counter + 1
 			end
 			Zorlen_debug("Player target not found!")
@@ -3486,34 +3491,58 @@ function Zorlen_TargetNearestEnemy(mode, cycles, givesxp)
 				Zorlen_debug("Clearing Target!", 2)
 			end
 			counter = 1
-			while (counter <= number) do
+			while (counter <= number) do repeat
 				TargetNearestEnemy()
 				name = UnitName("target")
-				if Zorlen_isActiveEnemy(nil, nil, nil, nil, nil, givesxp) and not (((mode == "mobonly") or (mode == "activemobonly")) and not Zorlen_isEnemyMob()) and (not (UnitIsUnit("pet", "targettarget") and not UnitIsUnit("pettarget", "target")) or not UnitExists("pettarget")) then
-					health = UnitHealth("target") / UnitHealthMax("target")
-					if healthscan and ((health < lowesthealth) or (lowesthealth == 0)) then
+				
+				-- Early exit if not a valid active enemy
+				if not Zorlen_isActiveEnemy(nil, nil, nil, nil, nil, givesxp) then
+					if Zorlen_DebugFlag and name and Zorlen_isEnemy() then
+						Zorlen_debug("Active targeting attempt #"..counter..": "..name, 2)
+					end
+					break
+				end
+				
+				-- Early exit for mode restrictions
+				if ((mode == "mobonly") or (mode == "activemobonly")) and not Zorlen_isEnemyMob() then
+					break
+				end
+				
+				-- Early exit for pet targeting conflicts
+				if (UnitIsUnit("pet", "targettarget") and not UnitIsUnit("pettarget", "target")) and UnitExists("pettarget") then
+					break
+				end
+				
+				-- Process valid target
+				health = UnitHealth("target") / UnitHealthMax("target")
+				
+				if healthscan then
+					if (health < lowesthealth) or (lowesthealth == 0) then
 						lowesthealth = health
 					end
-					if Zorlen_DebugFlag and healthscan then
+					if Zorlen_DebugFlag then
 						Zorlen_debug("Active target health scan on attempt #"..counter..": "..name, 2)
 					end
-					if not healthscan then
-						if health <= lowesthealth then
-							if Zorlen_DebugFlag then
-								if UnitIsPlayer("target") then
-									Zorlen_debug("Lowest health player found for targeting attempt #"..counter..": "..name)
-								else
-									Zorlen_debug("Lowest health target found for targeting attempt #"..counter..": "..name)
-								end
-							end
-							return
-						else
-							Zorlen_debug("Finding saved lowest health target attempt #"..counter..": "..name, 2)
-						end
-					end
-				elseif Zorlen_DebugFlag and name and Zorlen_isEnemy() then
-					Zorlen_debug("Active targeting attempt #"..counter..": "..name, 2)
+					break
 				end
+				
+				-- Non-healthscan logic
+				if health > lowesthealth then
+					Zorlen_debug("Finding saved lowest health target attempt #"..counter..": "..name, 2)
+					break
+				end
+				
+				-- Found target with acceptable health
+				if Zorlen_DebugFlag then
+					if UnitIsPlayer("target") then
+						Zorlen_debug("Lowest health player found for targeting attempt #"..counter..": "..name)
+					else
+						Zorlen_debug("Lowest health target found for targeting attempt #"..counter..": "..name)
+					end
+				end
+				return
+				
+			until true
 				if counter == number and number > 1 and healthscan and lowesthealth > 0 then
 					counter = 0
 					healthscan = nil
@@ -4567,77 +4596,80 @@ function Zorlen_InventoryScan(Healing, ShadowDamage, SpellDamage)
     return false
   end
 
-  for slot = 0, 23 do
-    if GetInventoryItemLink("player", slot) then
-      Tooltip:SetInventoryItem("player", slot)
-      local lines = Tooltip:NumLines()
-      local setNameSeen = nil
+  for slot = 0, 23 do repeat
+    if not GetInventoryItemLink("player", slot) then break end
 
-      for line = 1, lines do
-        local lt = getg("ZORLEN_TooltipTextLeft"..line)
-        local text = lt and lt:GetText()
-        if text and text ~= "" then
-          -- Set header: "Set Name (n/m)"
-          local _,_,setname = sfind(text, "^(.*) %(%d+%/%d+%)$")
-          if setname then
-            setNameSeen = setname
-            if not SetsWorn[setname] then SetsWorn[setname] = true end
-          -- Skip set bonus lines "(2) ...", and do nothing further with them
-          elseif not (setNameSeen and sfind(text, "^%(%d+%)%s")) then
-            -- Fast path: only bother with “worded” parsing if there’s a '+'
-            local handled = false
+	Tooltip:SetInventoryItem("player", slot)
+	local lines = Tooltip:NumLines()
+	local setNameSeen = nil
 
-            if sfind(text, "+", 1, true) then
-              local minp, maxp, bonusName = parseBonus(text)
+	for line = 1, lines do repeat
+	local lt = getg("ZORLEN_TooltipTextLeft"..line)
+	local text = lt and lt:GetText()
+	if not (text and text ~= "") then break end
 
-              if bonusName then
-                if needHeal and inArray(LOCALIZATION_ZORLEN.HealingBonusWordsArray, bonusName) then
-                  addHealingMinMax(minp, maxp); handled = true
-                elseif (needSpell or needHeal or needShadow)
-                  and inArray(LOCALIZATION_ZORLEN.SpellDamageAndHealingBonusWordsArray, bonusName) then
-                  if needHeal then addHealingMinMax(minp, maxp) end
-                  addSpellAndShadow(minp or 0); handled = true
-                elseif (needSpell or needShadow)
-                  and inArray(LOCALIZATION_ZORLEN.SpellDamageBonusWordsArray, bonusName) then
-                  addSpellAndShadow(minp or 0); handled = true
-                elseif needShadow
-                  and inArray(LOCALIZATION_ZORLEN.ShadowDamageBonusWordsArray, bonusName) then
-                  if minp then Zorlen_ShadowDamage = Zorlen_ShadowDamage + minp end
-                  handled = true
-                end
-              end
-            end
-
-            if not handled then
-              if needHeal then
-                local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.HealingBonusPhraseArray)
-                if v then Zorlen_VariableHealing = Zorlen_VariableHealing + v; handled = true end
-              end
-
-              if not handled and (needSpell or needHeal or needShadow) then
-                local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.SpellDamageAndHealingBonusPhraseArray)
-                if v then
-                  if needHeal then Zorlen_VariableHealing = Zorlen_VariableHealing + v end
-                  addSpellAndShadow(v); handled = true
-                end
-              end
-
-              if not handled and (needSpell or needShadow) then
-                local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.SpellDamageBonusPhraseArray)
-                if v then addSpellAndShadow(v); handled = true end
-                if not handled then handled = tryWizardOils(text) end
-              end
-
-              if not handled and needShadow then
-                local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.ShadowDamageBonusPhraseArray)
-                if v then Zorlen_ShadowDamage = Zorlen_ShadowDamage + v; handled = true end
-              end
-            end
-          end
-        end
-      end
+	-- Set header: "Set Name (n/m)"
+	local _,_,setname = sfind(text, "^(.*) %(%d+%/%d+%)$")
+	if setname then
+		setNameSeen = setname
+	if not SetsWorn[setname] then
+        SetsWorn[setname] = true
     end
-  end
+	-- Skip set bonus lines "(2) ...", and do nothing further with them
+	elseif not (setNameSeen and sfind(text, "^%(%d+%)%s")) then
+		-- Fast path: only bother with “worded” parsing if there’s a '+'
+		local handled = false
+
+		if sfind(text, "+", 1, true) then
+			local minp, maxp, bonusName = parseBonus(text)
+
+			if bonusName then
+			if needHeal and inArray(LOCALIZATION_ZORLEN.HealingBonusWordsArray, bonusName) then
+				addHealingMinMax(minp, maxp); handled = true
+			elseif (needSpell or needHeal or needShadow)
+				and inArray(LOCALIZATION_ZORLEN.SpellDamageAndHealingBonusWordsArray, bonusName) then
+				if needHeal then addHealingMinMax(minp, maxp) end
+				addSpellAndShadow(minp or 0); handled = true
+			elseif (needSpell or needShadow)
+				and inArray(LOCALIZATION_ZORLEN.SpellDamageBonusWordsArray, bonusName) then
+				addSpellAndShadow(minp or 0); handled = true
+			elseif needShadow
+				and inArray(LOCALIZATION_ZORLEN.ShadowDamageBonusWordsArray, bonusName) then
+				if minp then Zorlen_ShadowDamage = Zorlen_ShadowDamage + minp end
+				handled = true
+			end
+			end
+		end
+
+		if not handled then
+			if needHeal then
+			local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.HealingBonusPhraseArray)
+			if v then Zorlen_VariableHealing = Zorlen_VariableHealing + v; handled = true end
+			end
+
+			if not handled and (needSpell or needHeal or needShadow) then
+			local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.SpellDamageAndHealingBonusPhraseArray)
+			if v then
+				if needHeal then Zorlen_VariableHealing = Zorlen_VariableHealing + v end
+				addSpellAndShadow(v); handled = true
+			end
+			end
+
+			if not handled and (needSpell or needShadow) then
+			local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.SpellDamageBonusPhraseArray)
+			if v then addSpellAndShadow(v); handled = true end
+			if not handled then handled = tryWizardOils(text) end
+			end
+
+			if not handled and needShadow then
+			local v = findPhraseNumber(text, LOCALIZATION_ZORLEN.ShadowDamageBonusPhraseArray)
+			if v then Zorlen_ShadowDamage = Zorlen_ShadowDamage + v; handled = true end
+			end
+		end
+	end
+
+	until true end
+  until true end
 
   -- Summary (optional)
   Zorlen_debug("Inventory scan complete:")

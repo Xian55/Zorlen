@@ -334,7 +334,6 @@ end
 -- Example: Zorlen_CurrentForm == "Bear Form"
 -- The example above will return true if you are currently in the Bear Form.
 function Zorlen_RegisterDruidForm()
-	local i;
 	local max = GetNumShapeshiftForms();
 	for i = 1 , max do
 		local _, name, isActive = GetShapeshiftFormInfo(i);
@@ -352,10 +351,7 @@ end
 -- Example: Zorlen_CheckDruidForm("Bear Form")
 -- The example above will return true if you are currently in the Bear Form.
 function Zorlen_CheckDruidForm(form)
-	if form == Zorlen_CurrentForm then
-		return true
-	end
-	return false
+	return form == Zorlen_CurrentForm
 end
 
 
@@ -535,28 +531,33 @@ function castGroupMarkOfTheWild(pet)
 			if SpellButton or Zorlen_checkCooldown(SpellID) then
 				local counter = 1
 				local notunitarray = {}
-				while counter do
+				while counter do repeat
 					local u = Zorlen_GiveGroupUnitWithoutBuffBySpellName(SpellName, pet, nil, nil, notunitarray)
-					if u then
-						if UnitIsUnit("target", u) or UnitIsUnit("player", u) then
-							notunitarray[counter] = u
-						else
-							TargetUnit(u)
-							if castMarkOfTheWild() then
-								TargetLastTarget()
-								return true
-							end
-							TargetLastTarget()
-							notunitarray[counter] = u
-						end
-						counter = counter + 1
-						if not SpellButton then
-							counter = nil
-						end
-					else
+					if not u then
+						counter = nil
+						break
+					end
+					
+					if UnitIsUnit("target", u) or UnitIsUnit("player", u) then
+						notunitarray[counter] = u
+						break
+					end
+					
+					TargetUnit(u)
+					if castMarkOfTheWild() then
+						TargetLastTarget()
+						return true
+					end
+					
+					TargetLastTarget()
+					notunitarray[counter] = u
+					counter = counter + 1
+					
+					if not SpellButton then
 						counter = nil
 					end
-				end
+					
+				until true end
 			end
 		end
 	end
@@ -732,28 +733,33 @@ function castGroupThorns(pet)
 			if SpellButton or Zorlen_checkCooldown(SpellID) then
 				local counter = 1
 				local notunitarray = {}
-				while counter do
+				while counter do repeat
 					local u = Zorlen_GiveGroupUnitWithoutBuffBySpellName(SpellName, pet, nil, nil, notunitarray)
-					if u then
-						if UnitIsUnit("target", u) or UnitIsUnit("player", u) then
-							notunitarray[counter] = u
-						else
-							TargetUnit(u)
-							if castThorns() then
-								TargetLastTarget()
-								return true
-							end
-							TargetLastTarget()
-							notunitarray[counter] = u
-						end
-						counter = counter + 1
-						if not SpellButton then
-							counter = nil
-						end
-					else
+					if not u then
+						counter = nil
+						break
+					end
+					
+					if UnitIsUnit("target", u) or UnitIsUnit("player", u) then
+						notunitarray[counter] = u
+						break
+					end
+					
+					TargetUnit(u)
+					if castThorns() then
+						TargetLastTarget()
+						return true
+					end
+					
+					TargetLastTarget()
+					notunitarray[counter] = u
+					counter = counter + 1
+					
+					if not SpellButton then
 						counter = nil
 					end
-				end
+					
+				until true end
 			end
 		end
 	end
@@ -945,29 +951,34 @@ function castGroupHealingTouch(pet, Mode, RankAdj)
 			end
 			return false
 		elseif Zorlen_checkCooldownByName(SpellName) then
-			while counter do
+			while counter do repeat
 				u = Zorlen_GiveGroupUnitWithLowestHealth(pet, nil, nil, notunitarray)
-				if u then
-					if UnitIsUnit("target", u) then
-						notunitarray[counter] = u
-					elseif UnitIsUnit("player", u) then
-						return castHealingTouch(Mode, RankAdj, u)
-					else
-						TargetUnit(u)
-						if castHealingTouch(Mode, RankAdj, u) then
-							Zorlen_CastingUnit = u
-							Zorlen_CastingNotUnitArray = notunitarray
-							TargetLastTarget()
-							return true
-						end
-						TargetLastTarget()
-						notunitarray[counter] = u
-					end
-					counter = counter + 1
-				else
-					counter = nil
+				if not u then
+					break
 				end
-			end
+				
+				if UnitIsUnit("target", u) then
+					notunitarray[counter] = u
+					break
+				end
+				
+				if UnitIsUnit("player", u) then
+					return castHealingTouch(Mode, RankAdj, u)
+				end
+				
+				TargetUnit(u)
+				if castHealingTouch(Mode, RankAdj, u) then
+					Zorlen_CastingUnit = u
+					Zorlen_CastingNotUnitArray = notunitarray
+					TargetLastTarget()
+					return true
+				end
+				
+				TargetLastTarget()
+				notunitarray[counter] = u
+				counter = counter + 1
+				
+			until true end
 			if not u and Zorlen_isCasting(SpellName) then
 				SpellStopCasting()
 			end

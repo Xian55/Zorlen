@@ -49,40 +49,40 @@ function Zorlen_castPetSpell(SpellName)
     return false
   end
 
-  for i = 1, NUM_PET_ACTION_SLOTS do
+  for i = 1, NUM_PET_ACTION_SLOTS do repeat
     local slotName, _, _, _, isActive = GetPetActionInfo(i)
-    if slotName and slotName == SpellName then
-      local _, dur = GetPetActionCooldown(i)
+    if not( slotName and slotName == SpellName) then break end
+	local _, dur = GetPetActionCooldown(i)
 
-      -- Check cost (tooltip or cache)
-      local costType, cost = GetPetActionCost(i, SpellName)
+	-- Check cost (tooltip or cache)
+	local costType, cost = GetPetActionCost(i, SpellName)
 
-      if cost and costType then
-        -- Check resource type (Mana or Focus)
-        if costType == "MANA" and UnitMana("pet") < cost then
-          Zorlen_debug("Not enough mana for: " .. SpellName)
-          return false
-        elseif costType == "FOCUS" and UnitMana("pet") < cost then
-          Zorlen_debug("Not enough focus for: " .. SpellName)
-          return false
-        end
-      end
+	if cost and costType then
+		-- Check resource type (Mana or Focus)
+		if costType == "MANA" and UnitMana("pet") < cost then
+			Zorlen_debug("Not enough mana for: " .. SpellName)
+			return false
+		elseif costType == "FOCUS" and UnitMana("pet") < cost then
+			Zorlen_debug("Not enough focus for: " .. SpellName)
+			return false
+		end
+	end
 
-      -- Cooldown and active checks
-      if dur > 0 then
-        Zorlen_debug("Cooldown is enabled for: " .. SpellName)
-        return false
-      end
+	-- Cooldown and active checks
+	if dur > 0 then
+		Zorlen_debug("Cooldown is enabled for: " .. SpellName)
+		return false
+	end
 
-      if isActive then
-        Zorlen_debug("The pet ability " .. SpellName .. " is active, unable to cast")
-        return false
-      end
+	if isActive then
+		Zorlen_debug("The pet ability " .. SpellName .. " is active, unable to cast")
+		return false
+	end
 
-      CastPetAction(i)
-      return true
-    end
-  end
+	CastPetAction(i)
+	return true
+
+  until true end
 
   Zorlen_debug("Unable to locate pet ability: " .. SpellName)
   return false
@@ -97,7 +97,7 @@ function Zorlen_IsPetSpellOnCooldown(SpellName)
   for i = 1, NUM_PET_ACTION_SLOTS do
     local slotName = GetPetActionInfo(i)
     if slotName and slotName == SpellName then
-      local start, duration, enable = GetPetActionCooldown(i)
+      local start, duration, _ = GetPetActionCooldown(i)
       return (start > 0 and duration > 0)
     end
   end
@@ -112,12 +112,11 @@ function Zorlen_IsPetSpellAutocastEnabled(SpellName)
     return false
   end
 
-  for i = 1, NUM_PET_ACTION_SLOTS do
+  for i = 1, NUM_PET_ACTION_SLOTS do repeat
     local slotName, _, _, _, _, _, autoCastEnabled = GetPetActionInfo(i)
-    if slotName and slotName == SpellName then
-      return autoCastEnabled and true or false
-    end
-  end
+    if not(slotName and slotName == SpellName) then break end
+	return autoCastEnabled and true or false
+  until true end
 
   Zorlen_debug("Unable to locate pet ability: " .. SpellName)
   return false
@@ -137,33 +136,32 @@ function Zorlen_TogglePetSpellAutocast(SpellName, mode)
 		Zorlen_debug("Your pet is not active or alive to use pet ability: "..SpellName)
 		return false
 	end
-	
-	for i = 1, NUM_PET_ACTION_SLOTS do
+
+	for i = 1, NUM_PET_ACTION_SLOTS do repeat
 		local slotName, _, _, _, _, _, autoCastEnabled = GetPetActionInfo(i)
-		
-		if slotName and slotName == SpellName then
-			if mode == "on" then
-				if not autoCastEnabled then
-					TogglePetAutocast(i)
-					return true
-				end
-				return false
+		if not (slotName and slotName == SpellName) then break end
+
+		if mode == "on" then
+			if not autoCastEnabled then
+				TogglePetAutocast(i)
+				return true
 			end
-			
-			if mode == "off" then
-				if autoCastEnabled then
-					TogglePetAutocast(i)
-					return true
-				end
-				return false
-			end
-			
-			-- Default toggle mode
-			TogglePetAutocast(i)
-			return true
+			return false
 		end
-	end
-	
+
+		if mode == "off" then
+			if autoCastEnabled then
+				TogglePetAutocast(i)
+				return true
+			end
+			return false
+		end
+
+		-- Default toggle mode
+		TogglePetAutocast(i)
+		return true
+	until true end
+
 	Zorlen_debug("Unable to locate pet ability: "..SpellName)
 	return false
 end

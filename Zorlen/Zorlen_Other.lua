@@ -499,3 +499,25 @@ function castPerception()
 	z.EnemyTargetNotNeeded = 1
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
+
+-- HC-friendly version: returns true for any target that should be avoided.
+-- Unlike the standard WoW API UnitIsTapDenied, this also returns true for
+-- players and pets to prevent accidentally engaging them on hardcore servers.
+function UnitIsTapDenied(unit)
+  -- Avoid players entirely (HC safety)
+  if UnitIsPlayer(unit) then
+    return true
+  end
+
+  -- Avoid your own pet
+  if UnitIsUnit(unit, "pet") then
+    return true
+  end
+
+  -- Tapped but not by you/your group
+  if UnitIsTapped(unit) and not UnitIsTappedByPlayer(unit) then
+    return true
+  end
+
+  return false
+end

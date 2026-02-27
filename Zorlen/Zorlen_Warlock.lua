@@ -455,19 +455,22 @@ function Zorlen_SetShardBagSize(show)
 	if NUM_BAG_FRAMES and NUM_BAG_FRAMES > 0 then
 		local SoulBagitemType = LOCALIZATION_ZORLEN["Soul Bag"]
 		local BagitemType = LOCALIZATION_ZORLEN.Bag
-		for bag=1,NUM_BAG_FRAMES do
+		for bag=1,NUM_BAG_FRAMES do repeat
 			local bagslots = GetContainerNumSlots(bag)
-			if bagslots and bagslots > 0 then
-				local itemType = Zorlen_GetItemSubType(GetInventoryItemLink("player", ContainerIDToInventoryID(bag)))
-				if itemType == SoulBagitemType then
-					ShardBagSize = bagslots
-					Zorlen_debug("You have a "..itemType.." equipped in bag slot:  "..bag, show)
-					break
-				elseif itemType == BagitemType and bagslots > ShardBagSize then
-					ShardBagSize = bagslots
-				end
+			if not (bagslots and bagslots > 0) then
+				break
 			end
-		end
+
+			local itemType = Zorlen_GetItemSubType(GetInventoryItemLink("player", ContainerIDToInventoryID(bag)))
+			if itemType == SoulBagitemType then
+				ShardBagSize = bagslots
+				Zorlen_debug("You have a "..itemType.." equipped in bag slot:  "..bag, show)
+				break
+			elseif itemType == BagitemType and bagslots > ShardBagSize then
+				ShardBagSize = bagslots
+			end
+
+		until true end
 	end
 	Zorlen_ShardBagSize = ShardBagSize
 	Zorlen_debug("Soul Shard gather amount has been set to:  "..Zorlen_ShardBagSize, show)

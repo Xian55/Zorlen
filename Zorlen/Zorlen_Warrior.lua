@@ -377,16 +377,18 @@ end
 -- Example: Zorlen_CurrentStance == "Battle Stance"
 -- The example above will return true if you are currently in the Battle Stance.
 function Zorlen_RegisterWarriorStance()
-	local i;
 	local max = GetNumShapeshiftForms();
-	for i = 1 , max do
+	for i = 1 , max do repeat
 		local _, name, isActive = GetShapeshiftFormInfo(i);
-		if isActive then
-			Zorlen_debug("You are now in "..name..".");
-			Zorlen_CurrentStance = name;
-			return;
+		if not isActive then
+			break
 		end
-	end
+
+		Zorlen_debug("You are now in "..name..".");
+		Zorlen_CurrentStance = name;
+		return;
+
+	until true end
 	Zorlen_CurrentStance = "Default";
 end
 

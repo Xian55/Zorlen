@@ -183,21 +183,23 @@ end
 -- Returns the energy cost the Cheap Shot ability will need for it to cast (even if talent points are spent on it to lower its required energy cost).
 -- Will return 0 if no rank of the ability has been learned from the Rouge Trainer.
 function Zorlen_CheapShotEnergyCost()
-	if Zorlen_IsSpellKnown(LOCALIZATION_ZORLEN.CheapShot) then
-		local t = Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.DirtyDeeds)
-		return (60 - (10 * t))
+	if not Zorlen_IsSpellKnown(LOCALIZATION_ZORLEN.CheapShot) then
+		return 0
 	end
-	return 0
+
+	local t = Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.DirtyDeeds)
+	return (60 - (10 * t))
 end
 
 -- Returns the energy cost the Garrote ability will need for it to cast (even if talent points are spent on it to lower its required energy cost).
 -- Will return 0 if no rank of the ability has been learned from the Rouge Trainer.
 function Zorlen_GarroteEnergyCost()
-	if Zorlen_IsSpellKnown(LOCALIZATION_ZORLEN.Garrote) then
-		local t = Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.DirtyDeeds)
-		return (50 - (10 * t))
+	if not Zorlen_IsSpellKnown(LOCALIZATION_ZORLEN.Garrote) then
+		return 0
 	end
-	return 0
+
+	local t = Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.DirtyDeeds)
+	return (50 - (10 * t))
 end
 
 
@@ -205,66 +207,71 @@ end
 -- Returns the energy cost the Sinister Strike ability will need for it to cast (even if talent points are spent on it to lower its required energy cost).
 -- Will return 0 if no rank of the ability has been learned from the Rouge Trainer.
 function Zorlen_SinisterStrikeEnergyCost()
-	if Zorlen_IsSpellKnown(LOCALIZATION_ZORLEN.SinisterStrike) then
-		local t = Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.ImprovedSinisterStrike)
-		if t == 2 then
-			return 40
-		elseif t == 1 then
-			return 42
-		end
-		return 45
+	if not Zorlen_IsSpellKnown(LOCALIZATION_ZORLEN.SinisterStrike) then
+		return 0
 	end
-	return 0
+
+	local t = Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.ImprovedSinisterStrike)
+	if t == 2 then
+		return 40
+	elseif t == 1 then
+		return 42
+	end
+	return 45
 end
 
 
 
 function castSinisterStrike(test)
+	if not Zorlen_isMainHandEquipped() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.SinisterStrike
 	z.ManaNeeded = Zorlen_SinisterStrikeEnergyCost()
-	if not Zorlen_isMainHandEquipped() then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 
 
 function castCheapShot(test)
+	if not isStealthActive() or not Zorlen_isMainHandEquipped() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.CheapShot
 	z.ManaNeeded = Zorlen_CheapShotEnergyCost()
-	if not isStealthActive() or not Zorlen_isMainHandEquipped() then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 
 function castGarrote(test)
+	if not isStealthActive() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Garrote
 	z.ManaNeeded = Zorlen_GarroteEnergyCost()
-	if not isStealthActive() then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 
 
 function castBackstab(test)
+	if not Zorlen_isMainHandDagger() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Backstab
 	z.ManaNeeded = 60
-	if not Zorlen_isMainHandDagger() then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
@@ -296,13 +303,14 @@ end
 
 --Added by Xek
 function castEviscerate(ComboPointsNumber, test)
+	if not isComboPoints(ComboPointsNumber) or not Zorlen_isMainHandEquipped() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Eviscerate
 	z.ManaNeeded = 35
-	if not isComboPoints(ComboPointsNumber) or not Zorlen_isMainHandEquipped() then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
@@ -327,13 +335,15 @@ end
 --Added by charroux
 --Edited by BigRedBrent
 function castHemorrhage(RemoveDebuffCheck, test)
+	if not Zorlen_isMainHandEquipped() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Hemorrhage
 	z.ManaNeeded = 35
-	if not Zorlen_isMainHandEquipped() then
-		return false 
-	elseif not RemoveDebuffCheck then
+	if not RemoveDebuffCheck then
 		z.DebuffName = z.SpellName
 	end
 	return Zorlen_CastCommonRegisteredSpell(z)
@@ -349,13 +359,14 @@ function castGhostlyStrike(test)
 end
 
 function castStealth(test)
+	if Zorlen_inCombat() or isStealthActive() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Stealth
 	z.EnemyTargetNotNeeded = 1
-	if Zorlen_inCombat() or isStealthActive() then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
@@ -373,78 +384,84 @@ end
 
 --Added by charroux
 function castAmbush(test)
+	if not Zorlen_isMainHandDagger() or not isStealthActive() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Ambush
 	z.ManaNeeded = 60
-	if not Zorlen_isMainHandDagger() or not isStealthActive() then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 --Added by charroux
 function castKidneyShot(ComboPointsNumber, test)
+	if not isComboPoints(ComboPointsNumber) or not Zorlen_isMainHandEquipped() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.KidneyShot
 	z.ManaNeeded = 25
-	if not isComboPoints(ComboPointsNumber) or not Zorlen_isMainHandEquipped() then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 --Added by charroux
 function castBladeFlurry(test)
+	if not Zorlen_isMainHandEquipped() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.BladeFlurry
 	z.ManaNeeded = 25
 	z.EnemyTargetNotNeeded = 1
-	if not Zorlen_isMainHandEquipped() then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 --Added by charroux
 function castGouge(test)
+	if not Zorlen_isMainHandEquipped() then
+		return false
+	end
+
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Gouge
 	z.ManaNeeded = 45
-	if not Zorlen_isMainHandEquipped() then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 
 function castFeint(GroupOnly, test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.Feint
-	z.ManaNeeded = 20
 	if GroupOnly then
 		local raid = UnitInRaid("player")
 		if (not raid and GetNumPartyMembers() == 0) or (raid and GetNumRaidMembers() <= 1) then
 			return false
 		end
 	end
+
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.Feint
+	z.ManaNeeded = 20
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 --Added by charroux
 function castBlind(RequiredPowderReserve, test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.Blind
-	z.ManaNeeded = 30
 	RequiredPowderReserve = RequiredPowderReserve or 1
 	if Zorlen_GiveContainerItemCountByItemID(5530) < RequiredPowderReserve then
 		return false
 	end
+
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.Blind
+	z.ManaNeeded = 30
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
