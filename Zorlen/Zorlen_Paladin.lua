@@ -95,16 +95,18 @@ for funcName, spellKey in pairs(AuraCastMap) do
 	do
 		local f = funcName
 		local key = spellKey
+		local isSealCast = (find(f, "^castSo") ~= nil) or (f == "castSotC")
 
 		global[f] = function(AnySealOrTest, test)
 
 			AnySealOrTest = AnySealOrTest or false
 			test = test or false
 
-			Zorlen_debug("Zorlen: " .. f .. " called with AnySealOrTest: " .. tostring(AnySealOrTest) .. ", test: " .. tostring(test))
+			if Zorlen_DebugFlag then
+				Zorlen_debug("Zorlen: " .. f .. " called with AnySealOrTest: " .. tostring(AnySealOrTest) .. ", test: " .. tostring(test))
+			end
 
 			-- Handle optional arguments: (AnySeal, test) vs (test)
-			local isSealCast = (find(f, "^castSo") ~= nil) or (f == "castSotC")
 			local isSealBlocked = isSealCast and AnySealOrTest
 			local actualTest = isSealCast and test or AnySealOrTest
 

@@ -1306,63 +1306,74 @@ function Zorlen_OnUpdate(arg1)
 	elseif Zorlen_isCurrentClassWarrior then
 		Zorlen_Warrior_OnUpdate(TimerRunDown)
 	end
-	Zorlen_MovingUpdate()
+	Zorlen_MovingUpdate(arg1)
 end
 
 function Zorlen_OnUpdate_TimerRunDown(arg1)
 	local counter = 1
 	local found = false
-	while Zorlen_Timer.FullName[counter] do
-		if Zorlen_Timer.Seconds[Zorlen_Timer.FullName[counter]] then
+	local ZT = Zorlen_Timer
+	local ZT_Seconds = ZT.Seconds
+	local ZT_FullName = ZT.FullName
+	local ZT_TimerTimer = ZT.TimerTimer
+	local ZT_Tag = ZT.Tag
+	local ZT_Pre = ZT.Pre
+	local ZT_Name = ZT.Name
+	local ZT_Show = ZT.Show
+	local ZT_RunFunction = ZT.RunFunction
+	while ZT_FullName[counter] do
+		local fn = ZT_FullName[counter]
+		if ZT_Seconds[fn] then
 			if not found then
 				found = true
 			end
-			Zorlen_Timer.Seconds[Zorlen_Timer.FullName[counter]] = Zorlen_Timer.Seconds[Zorlen_Timer.FullName[counter]] - arg1
-			if Zorlen_Timer.Seconds[Zorlen_Timer.FullName[counter]] <= 0 then
-				if Zorlen_Timer.TimerTimer[Zorlen_Timer.FullName[counter]] then
+			ZT_Seconds[fn] = ZT_Seconds[fn] - arg1
+			if ZT_Seconds[fn] <= 0 then
+				local tt = ZT_TimerTimer[fn]
+				if tt then
 					if Zorlen_DebugFlag then
-						if Zorlen_Timer.Tag[counter] ~= "" and not string.find(Zorlen_Timer.Tag[counter], "InternalZorlen") then
-							if Zorlen_Timer.Pre[counter] ~= "" then
-								Zorlen_debug("Pre Timer Expired:  '"..Zorlen_Timer.Tag[counter].."'  '"..Zorlen_Timer.Pre[counter].."'  '"..Zorlen_Timer.Name[counter].."'", Zorlen_Timer.Show[counter])
+						if ZT_Tag[counter] ~= "" and not string.find(ZT_Tag[counter], "InternalZorlen", 1, true) then
+							if ZT_Pre[counter] ~= "" then
+								Zorlen_debug("Pre Timer Expired:  '"..ZT_Tag[counter].."'  '"..ZT_Pre[counter].."'  '"..ZT_Name[counter].."'", ZT_Show[counter])
 							else
-								Zorlen_debug("Pre Timer Expired:  '"..Zorlen_Timer.Tag[counter].."'  '"..Zorlen_Timer.Name[counter].."'", Zorlen_Timer.Show[counter])
+								Zorlen_debug("Pre Timer Expired:  '"..ZT_Tag[counter].."'  '"..ZT_Name[counter].."'", ZT_Show[counter])
 							end
 						else
-							if Zorlen_Timer.Pre[counter] ~= "" then
-								Zorlen_debug("Pre Timer Expired:  '"..Zorlen_Timer.Pre[counter].."'  '"..Zorlen_Timer.Name[counter].."'", Zorlen_Timer.Show[counter])
+							if ZT_Pre[counter] ~= "" then
+								Zorlen_debug("Pre Timer Expired:  '"..ZT_Pre[counter].."'  '"..ZT_Name[counter].."'", ZT_Show[counter])
 							else
-								Zorlen_debug("Pre Timer Expired:  '"..Zorlen_Timer.Name[counter].."'", Zorlen_Timer.Show[counter])
+								Zorlen_debug("Pre Timer Expired:  '"..ZT_Name[counter].."'", ZT_Show[counter])
 							end
 						end
 					end
-					local a = (Zorlen_Timer.TimerTimer[Zorlen_Timer.FullName[counter]][1] + Zorlen_Timer.Seconds[Zorlen_Timer.FullName[counter]])
-					local b = Zorlen_Timer.TimerTimer[Zorlen_Timer.FullName[counter]][2]
-					local c = Zorlen_Timer.TimerTimer[Zorlen_Timer.FullName[counter]][3]
-					local d = Zorlen_Timer.TimerTimer[Zorlen_Timer.FullName[counter]][4]
-					local e = Zorlen_Timer.TimerTimer[Zorlen_Timer.FullName[counter]][5]
-					local f = Zorlen_Timer.TimerTimer[Zorlen_Timer.FullName[counter]][6]
-					Zorlen_Timer.Seconds[Zorlen_Timer.FullName[counter]] = nil
+					local a = (tt[1] + ZT_Seconds[fn])
+					local b = tt[2]
+					local c = tt[3]
+					local d = tt[4]
+					local e = tt[5]
+					local f = tt[6]
+					ZT_Seconds[fn] = nil
 					Zorlen_SetTimer(a, b, c, d, e, f)
 					Zorlen_AfterPreSpellCancelTimers(b, c, d)
 				else
 					if Zorlen_DebugFlag then
-						if Zorlen_Timer.Tag[counter] ~= "" and not string.find(Zorlen_Timer.Tag[counter], "InternalZorlen") then
-							if Zorlen_Timer.Pre[counter] ~= "" then
-								Zorlen_debug("Timer Expired:  '"..Zorlen_Timer.Tag[counter].."'  '"..Zorlen_Timer.Pre[counter].."'  '"..Zorlen_Timer.Name[counter].."'", Zorlen_Timer.Show[counter])
+						if ZT_Tag[counter] ~= "" and not string.find(ZT_Tag[counter], "InternalZorlen", 1, true) then
+							if ZT_Pre[counter] ~= "" then
+								Zorlen_debug("Timer Expired:  '"..ZT_Tag[counter].."'  '"..ZT_Pre[counter].."'  '"..ZT_Name[counter].."'", ZT_Show[counter])
 							else
-								Zorlen_debug("Timer Expired:  '"..Zorlen_Timer.Tag[counter].."'  '"..Zorlen_Timer.Name[counter].."'", Zorlen_Timer.Show[counter])
+								Zorlen_debug("Timer Expired:  '"..ZT_Tag[counter].."'  '"..ZT_Name[counter].."'", ZT_Show[counter])
 							end
 						else
-							if Zorlen_Timer.Pre[counter] ~= "" then
-								Zorlen_debug("Timer Expired:  '"..Zorlen_Timer.Pre[counter].."'  '"..Zorlen_Timer.Name[counter].."'", Zorlen_Timer.Show[counter])
+							if ZT_Pre[counter] ~= "" then
+								Zorlen_debug("Timer Expired:  '"..ZT_Pre[counter].."'  '"..ZT_Name[counter].."'", ZT_Show[counter])
 							else
-								Zorlen_debug("Timer Expired:  '"..Zorlen_Timer.Name[counter].."'", Zorlen_Timer.Show[counter])
+								Zorlen_debug("Timer Expired:  '"..ZT_Name[counter].."'", ZT_Show[counter])
 							end
 						end
 					end
-					Zorlen_Timer.Seconds[Zorlen_Timer.FullName[counter]] = nil
-					if type(Zorlen_Timer.RunFunction[counter]) == "function" then
-						Zorlen_Timer.RunFunction[counter]()
+					ZT_Seconds[fn] = nil
+					if type(ZT_RunFunction[counter]) == "function" then
+						ZT_RunFunction[counter]()
 					end
 				end
 			end
@@ -1516,7 +1527,8 @@ function Zorlen_OnEvent(event, arg1, arg2, arg3)
 			--------------------------------------------------------------------------------------------------------
 	elseif (event == ("LEARNED_SPELL_IN_TAB")) then
 			---------------------------
-			
+
+			Zorlen_ClearSpellIDCache()
 			Zorlen_Button_MaxRank = {}
 			Zorlen_RegisterButtons()
 			
@@ -2137,8 +2149,8 @@ function Zorlen_debug(msg, show)
 end
 
 function Zorlen_EventsDebug(event, arg1, arg2, arg3, show)
-	if event then
-		if ZORLEN_ZPN and ZorlenConfig[ZORLEN_ZPN][ZORLEN_LOG_EVENTS] and ZorlenConfig[ZORLEN_EVENT_LOG] and event ~= "UNIT_INVENTORY_CHANGED" and event ~= "SPELLCAST_START" and event ~= "SPELLCAST_CHANNEL_START" and event ~= "START_AUTOREPEAT_SPELL" and event ~= "SPELLCAST_FAILED" and event ~= "PLAYER_TARGET_CHANGED" and event ~= "ACTIONBAR_HIDEGRID" then
+	if not event then return end
+	if ZORLEN_ZPN and ZorlenConfig[ZORLEN_ZPN] and ZorlenConfig[ZORLEN_ZPN][ZORLEN_LOG_EVENTS] and ZorlenConfig[ZORLEN_EVENT_LOG] and event ~= "UNIT_INVENTORY_CHANGED" and event ~= "SPELLCAST_START" and event ~= "SPELLCAST_CHANNEL_START" and event ~= "START_AUTOREPEAT_SPELL" and event ~= "SPELLCAST_FAILED" and event ~= "PLAYER_TARGET_CHANGED" and event ~= "ACTIONBAR_HIDEGRID" then
 			if arg1 and arg1 ~= "" and not string.find(""..arg1.."", "^(%d+)$") and not string.find(""..arg1.."", "^/script ") then
 				local arg_1 = Zorlen_gsub(arg1, "%d+", "%(%%d%+%)")
 				local SpellName1 = "arg1"
@@ -2240,7 +2252,6 @@ function Zorlen_EventsDebug(event, arg1, arg2, arg3, show)
 				end
 			end
 		end
-	end
 end
 
 
@@ -2542,44 +2553,63 @@ end
 
 
 --Internal function that returns the SpellID of the highest ranking spell for SpellName
-function Zorlen_GetSpellID(SpellName, SpellRank, Book)
-  if not SpellName then return nil end
+-- Spell ID cache: [Book][SpellName] = { [0] = firstId, [rank] = id, max = highestId }
+local Zorlen_SpellIDCache = {}
 
+function Zorlen_RebuildSpellIDCache(Book)
   local B = Book or BOOKTYPE_SPELL
-  local lastId = nil
-  local wantRank = (SpellRank ~= nil)
-
+  Zorlen_SpellIDCache[B] = {}
+  local cache = Zorlen_SpellIDCache[B]
   local i = 1
   while true do
     local name, rankText = GetSpellName(i, B)
     if not name then break end
-
-    if name == SpellName then
-      if wantRank then
-        if SpellRank == 0 then
-          return i  -- first match
-        else
-          local r
-          if rankText and rankText ~= "" then
-            local _, _, n = string.find(rankText, "(%d+)")
-            r = n and tonumber(n) or 1
-          else
-            r = 1
-          end
-          if r == SpellRank then
-            return i
-          end
-        end
-      else
-        -- no specific rank requested: keep the latest match (highest rank)
-        lastId = i
-      end
+    if not cache[name] then
+      cache[name] = { [0] = i }
     end
-
+    local entry = cache[name]
+    entry.max = i
+    if rankText and rankText ~= "" then
+      local _, _, n = string.find(rankText, "(%d+)")
+      if n then
+        entry[tonumber(n)] = i
+      else
+        entry[1] = i
+      end
+    else
+      entry[1] = i
+    end
     i = i + 1
   end
+end
 
-  return lastId
+function Zorlen_ClearSpellIDCache()
+  Zorlen_SpellIDCache = {}
+end
+
+function Zorlen_GetSpellID(SpellName, SpellRank, Book)
+  if not SpellName then return nil end
+
+  local B = Book or BOOKTYPE_SPELL
+
+  -- Build cache on first access for this book type
+  if not Zorlen_SpellIDCache[B] then
+    Zorlen_RebuildSpellIDCache(B)
+  end
+
+  local entry = Zorlen_SpellIDCache[B][SpellName]
+  if not entry then return nil end
+
+  if SpellRank ~= nil then
+    if SpellRank == 0 then
+      return entry[0]  -- first match
+    else
+      return entry[SpellRank]
+    end
+  else
+    -- no specific rank: return highest (last encountered)
+    return entry.max
+  end
 end
 
 
@@ -4536,23 +4566,21 @@ function Zorlen_InventoryScan(Healing, ShadowDamage, SpellDamage)
   local Tooltip = ZORLEN_Tooltip
   local getg = getglobal
   local sfind = string.find
-  local smatch = string.match
-
   local SetsWorn = {}
 
   -- helpers (no extra tables created)
   local function parseBonus(text)
     -- +X-Y Name
-    local a,b,name = smatch(text, "^%+(%d+)%-(%d+)%s+(.*)$")
+    local _, _, a, b, name = sfind(text, "^%+(%d+)%-(%d+)%s+(.*)$")
     if a then return a+0, b+0, name end
     -- Name +X-Y
-    name,a,b = smatch(text, "^(.*)%s+%+(%d+)%-(%d+)$")
+    _, _, name, a, b = sfind(text, "^(.*)%s+%+(%d+)%-(%d+)$")
     if a then return a+0, b+0, name end
     -- +X Name
-    a,name = smatch(text, "^%+(%d+)%s+(.*)$")
+    _, _, a, name = sfind(text, "^%+(%d+)%s+(.*)$")
     if a then return a+0, nil, name end
     -- Name +X
-    name,a = smatch(text, "^(.*)%s+%+(%d+)$")
+    _, _, name, a = sfind(text, "^(.*)%s+%+(%d+)$")
     if a then return a+0, nil, name end
     return nil,nil,nil
   end
@@ -6340,7 +6368,11 @@ Zorlen_isMoveing = Zorlen_isMoving
 isMoveing = Zorlen_isMoving
 isMoving = Zorlen_isMoving
 
-function Zorlen_MovingUpdate()
+local Zorlen_MovingUpdate_elapsed = 0
+function Zorlen_MovingUpdate(dt)
+	Zorlen_MovingUpdate_elapsed = Zorlen_MovingUpdate_elapsed + (dt or 0)
+	if Zorlen_MovingUpdate_elapsed < 0.2 then return end
+	Zorlen_MovingUpdate_elapsed = 0
 	local x, y = GetPlayerMapPosition("player")
 	if x == Zorlen_Moving_X and y == Zorlen_Moving_Y then
 		Zorlen_Moving = nil
@@ -6384,16 +6416,17 @@ end
 
 
 -- Update and cache buffs (name and texture)
+local Zorlen_BuffCache_generation = 0
 local function Zorlen_UpdateBuffCache()
   if not Zorlen_BuffCache.buffs then
     Zorlen_BuffCache.buffs = {}
-  else
-    table.wipe(Zorlen_BuffCache.buffs)
   end
   if not Zorlen_BuffCache.previousDurations then
     Zorlen_BuffCache.previousDurations = {}
   end
 
+  Zorlen_BuffCache_generation = Zorlen_BuffCache_generation + 1
+  local gen = Zorlen_BuffCache_generation
   local buffs = Zorlen_BuffCache.buffs
   local prevDurations = Zorlen_BuffCache.previousDurations
 
@@ -6408,20 +6441,33 @@ local function Zorlen_UpdateBuffCache()
 	local duration = GetPlayerBuffTimeLeft(index)
 
 	if name then
-		local prevDuration = prevDurations[name]
-		if prevDuration and duration and duration > prevDuration then
-			Zorlen_debug(string.format("Buff '%s' duration increased: %s → %s", name, prevDuration, duration), 1)
-		elseif not prevDuration then
-			Zorlen_debug(string.format("Buff '%s' applied with duration %s", name, duration), 1)
+		if Zorlen_DebugFlag then
+			local prevDuration = prevDurations[name]
+			if prevDuration and duration and duration > prevDuration then
+				Zorlen_debug(string.format("Buff '%s' duration increased: %s -> %s", name, prevDuration, duration), 1)
+			elseif not prevDuration then
+				Zorlen_debug(string.format("Buff '%s' applied with duration %s", name, duration), 1)
+			end
 		end
 
-		-- Save to cache and update previous duration
-		buffs[name] = {
-			index = index,
-			texture = texture,
-			duration = duration
-		}
+		-- Reuse existing entry table to avoid allocation
+		local entry = buffs[name]
+		if not entry then
+			entry = {}
+			buffs[name] = entry
+		end
+		entry.index = index
+		entry.texture = texture
+		entry.duration = duration
+		entry._gen = gen
 		prevDurations[name] = duration
+	end
+  end
+
+  -- Remove stale entries (buffs that expired since last update)
+  for name, entry in pairs(buffs) do
+	if entry._gen ~= gen then
+		buffs[name] = nil
 	end
   end
 
@@ -6512,7 +6558,8 @@ function Zorlen_SpellCastTime(SpellName, SpellRank)
 		return 0
 	end
 
-	castTime = string.match(castTime, "([%d%.]+)")
+	local _, _, ct = string.find(castTime, "([%d%.]+)")
+	castTime = ct
 	if not castTime then
 		return 0
 	end

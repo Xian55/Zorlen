@@ -417,11 +417,11 @@ function cast_ManaEfficient_ArcaneMissiles(SpellRank, test)
 	if not IsAddOnLoaded("MobHealth2") then
 		return castArcaneMissiles(SpellRank, test)
 	end
-	local z = {}
-	z.Test = test
 	if Zorlen_isMoving() then
 		return false
 	end
+	local z = {}
+	z.Test = test
 
 	local DamageList = { 73, 145, 281, 416, 576, 756, 960, 1150 }
 	local TargetHealth = MobHealth_GetTargetCurHP()
@@ -469,11 +469,11 @@ function cast_ManaEfficient_Blizzard(SpellRank, test)
 	if not IsAddOnLoaded("MobHealth2") then
 		return castBlizzard(SpellRank, test)
 	end
-	local z = {}
-	z.Test = test
 	if Zorlen_isMoving() then
 		return false
 	end
+	local z = {}
+	z.Test = test
 
 	local DamageList = { 201, 353, 521, 721, 937, 1193 }
 	local TargetHealth = MobHealth_GetTargetCurHP()
@@ -521,13 +521,13 @@ function cast_ManaEfficient_Fireball(SpellRank, test)
 	if not IsAddOnLoaded("MobHealth2") then
 		return castFireball(SpellRank, test)
 	end
-	local z = {}
-	z.Test = test
 	if Zorlen_isMoving() then
 		return false
 	end
+	local z = {}
+	z.Test = test
 
-	local DamageList = { 17, 32, 54, 85, 140, 200, 256, 319, 393, 476, 562, 597 } 
+	local DamageList = { 17, 32, 54, 85, 140, 200, 256, 319, 393, 476, 562, 597 }
 	local TargetHealth = MobHealth_GetTargetCurHP()
 	local iter = 0
 
@@ -549,11 +549,11 @@ function cast_ManaEfficient_Flamestrike(SpellRank, test)
 	if not IsAddOnLoaded("MobHealth2") then
 		return castFlamestrike(SpellRank, test)
 	end
-	local z = {}
-	z.Test = test
 	if Zorlen_isMoving() then
 		return false
 	end
+	local z = {}
+	z.Test = test
 
 	local DamageList = { 53, 97, 155, 221, 292, 376 }
 	local TargetHealth = MobHealth_GetTargetCurHP()
@@ -577,11 +577,11 @@ function cast_ManaEfficient_Frostbolt(SpellRank, test)
 	if not IsAddOnLoaded("MobHealth2") then
 		return castFrostbolt(SpellRank, test)
 	end
-	local z = {}
-	z.Test = test
 	if Zorlen_isMoving() then
 		return false
 	end
+	local z = {}
+	z.Test = test
 
 	local DamageList = { 19, 32, 52, 75, 127, 175, 228, 293, 354, 430, 516 }
 	local TargetHealth = MobHealth_GetTargetCurHP()
@@ -605,11 +605,11 @@ function cast_ManaEfficient_Pyroblast(SpellRank, test)
 	if not IsAddOnLoaded("MobHealth2") then
 		return castPyroblast(SpellRank, test)
 	end
-	local z = {}
-	z.Test = test
 	if Zorlen_isMoving() then
 		return false
 	end
+	local z = {}
+	z.Test = test
 
 	local DamageList = { 181, 256, 330, 408, 503, 601, 717 }
 	local TargetHealth = MobHealth_GetTargetCurHP()
@@ -633,11 +633,11 @@ function cast_ManaEfficient_Scorch(SpellRank, test)
 	if not IsAddOnLoaded("MobHealth2") then
 		return castScorch(SpellRank, test)
 	end
-	local z = {}
-	z.Test = test
 	if Zorlen_isMoving() then
 		return false
 	end
+	local z = {}
+	z.Test = test
 
 	local DamageList = { 54, 78, 101, 134, 163, 201, 234 }
 	local TargetHealth = MobHealth_GetTargetCurHP()

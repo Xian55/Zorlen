@@ -33,25 +33,29 @@ if not Zorlen_isCurrentClassShaman then return end
 -- Added by Nosrac
 function isRockbiterWeaponActive()
 	local SpellName = LOCALIZATION_ZORLEN.RockbiterWeapon
-	Zorlen_checkItemBuffByName(SpellName)
+	local buffName = string.gsub(SpellName, "%s*Weapon$", "")
+	return Zorlen_checkItemBuffByName(buffName)
 end
 
 -- Added by Nosrac
 function isFlametongueWeaponActive()
 	local SpellName = LOCALIZATION_ZORLEN.FlametongueWeapon
-	Zorlen_checkItemBuffByName(SpellName)
+	local buffName = string.gsub(SpellName, "%s*Weapon$", "")
+	return Zorlen_checkItemBuffByName(buffName)
 end
 
 -- Added by Nosrac
 function isFrostbrandWeaponActive()
 	local SpellName = LOCALIZATION_ZORLEN.FrostbrandWeapon
-	Zorlen_checkItemBuffByName(SpellName)
+	local buffName = string.gsub(SpellName, "%s*Weapon$", "")
+	return Zorlen_checkItemBuffByName(buffName)
 end
 
 -- Added by Nosrac
 function isWindfuryWeaponActive()
 	local SpellName = LOCALIZATION_ZORLEN.WindfuryWeapon
-	Zorlen_checkItemBuffByName(SpellName)
+	local buffName = string.gsub(SpellName, "%s*Weapon$", "")
+	return Zorlen_checkItemBuffByName(buffName)
 end
 
 -- Added by Nosrac

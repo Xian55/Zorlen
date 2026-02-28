@@ -844,19 +844,19 @@ function castSoulFire(SpellRank, SkipShardCheck)
 	if Zorlen_isMoving() then
 		return false
 	end
+	if not SkipShardCheck then
+		if SpellRank then
+			if not Zorlen_Button[LOCALIZATION_ZORLEN.SoulFire.."."..SpellRank] and not Zorlen_isItemByItemIDInContainer(6265) then
+				return false
+			end
+		elseif not Zorlen_Button[LOCALIZATION_ZORLEN.SoulFire] and not Zorlen_isItemByItemIDInContainer(6265) then
+			return false
+		end
+	end
 	local z = {}
 	z.SpellName = LOCALIZATION_ZORLEN.SoulFire
 	z.Rank = SpellRank
 	z.DebuffImmune = Zorlen_FireSpellCastImmune
-	if not SkipShardCheck then
-		if z.Rank then
-			if not Zorlen_Button[z.SpellName.."."..z.Rank] and not Zorlen_isItemByItemIDInContainer(6265) then
-				return false
-			end
-		elseif not Zorlen_Button[z.SpellName] and not Zorlen_isItemByItemIDInContainer(6265) then
-			return false
-		end
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
@@ -1106,32 +1106,33 @@ end
 
 
 function castShadowBolt(SpellRank)
+	local stopCasting = isNightfallActive()
+	if Zorlen_isMoving() and not stopCasting then
+		return false
+	end
 	local z = {}
 	z.SpellName = LOCALIZATION_ZORLEN.ShadowBolt
 	z.Rank = SpellRank
-	z.StopCasting = isNightfallActive()
+	z.StopCasting = stopCasting
 	z.DebuffImmune = Zorlen_ShadowSpellCastImmune
-	if Zorlen_isMoving() and not z.StopCasting then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castShadowburn(SpellRank, SkipShardCheck, StopCast)
+	if not SkipShardCheck then
+		if SpellRank then
+			if not Zorlen_Button[LOCALIZATION_ZORLEN.Shadowburn.."."..SpellRank] and not Zorlen_isItemByItemIDInContainer(6265) then
+				return false
+			end
+		elseif not Zorlen_Button[LOCALIZATION_ZORLEN.Shadowburn] and not Zorlen_isItemByItemIDInContainer(6265) then
+			return false
+		end
+	end
 	local z = {}
 	z.SpellName = LOCALIZATION_ZORLEN.Shadowburn
 	z.Rank = SpellRank
 	z.DebuffImmune = Zorlen_ShadowSpellCastImmune
 	z.StopCasting = StopCast
-	if not SkipShardCheck then
-		if z.Rank then
-			if not Zorlen_Button[z.SpellName.."."..z.Rank] and not Zorlen_isItemByItemIDInContainer(6265) then
-				return false
-			end
-		elseif not Zorlen_Button[z.SpellName] and not Zorlen_isItemByItemIDInContainer(6265) then
-			return false
-		end
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 

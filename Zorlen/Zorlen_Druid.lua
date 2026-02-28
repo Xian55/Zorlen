@@ -915,6 +915,26 @@ end
 
 
 
+-- File-scope constant arrays for healing spells (hoisted to avoid re-creation on every call)
+local Zorlen_HealingTouch_LevelLearned = {1,8,14,20,26,32,38,44,50,56,60}
+local Zorlen_HealingTouch_Mana = {25,55,110,185,270,335,405,495,600,720,800}
+local Zorlen_HealingTouch_MinHeal = {40,094,195,363,572,742,0936,1199,1516,1890,2267}
+local Zorlen_HealingTouch_MaxHeal = {55,119,243,445,694,894,1120,1427,1796,2230,2677}
+local Zorlen_HealingTouch_Time = {1.5,2.0,2.5,3.0,3.5,3.5,3.5,3.5,3.5,3.5,3.5}
+
+local Zorlen_Regrowth_LevelLearned = {12,18,24,30,36,42,48,54,60}
+local Zorlen_Regrowth_Mana = {120,205,280,350,420,510,615,740,880}
+local Zorlen_Regrowth_MinHeal = {182,339,499,661,832,1057,1332,1670,2067}
+local Zorlen_Regrowth_MaxHeal = {196,363,533,661,884,1121,1410,1766,2183}
+local Zorlen_Regrowth_Time = {2,2,2,2,2,2,2,2,2}
+
+local Zorlen_Rejuvenation_LevelLearned = {4,10,16,22,28,34,40,46,52,58,60}
+local Zorlen_Rejuvenation_Mana = {25,40,75,105,135,160,195,235,280,335,360}
+local Zorlen_Rejuvenation_MinHeal = {32,56,116,180,244,304,388,488,608,756,888}
+local Zorlen_Rejuvenation_MaxHeal = {32,56,116,180,244,304,388,488,608,756,888}
+local Zorlen_Rejuvenation_Time = {0,0,0,0,0,0,0,0,0,0,0}
+
+
 --This will try to heal party or raid members as long as you are not targeting a unit that can be healed by the spell.
 --I made it give priority to your current target so that you have the option to choose priority in the heat of battle.
 --If you want it to always select for you then just clear your target or target an enemy before using the function.
@@ -1013,22 +1033,28 @@ function castHealingTouch(Mode, RankAdj, unit)
 		if Zorlen_isMoving() and not isNaturesSwiftnessActive() then
 			return false
 		end
-		local LevelLearnedArray={1,8,14,20,26,32,38,44,50,56,60}
-		local ManaArray={25,55,110,185,270,335,405,495,600,720,800}
-		local MinHealArray={40,094,195,363,572,742,0936,1199,1516,1890,2267}
-		local MaxHealArray={55,119,243,445,694,894,1120,1427,1796,2230,2677}
-		local TimeArray={1.5,2.0,2.5,3.0,3.5,3.5,3.5,3.5,3.5,3.5,3.5}
+		local LevelLearnedArray = Zorlen_HealingTouch_LevelLearned
+		local ManaArray = {}
+		local MinHealArray = {}
+		local MaxHealArray = {}
+		local TimeArray = {}
+		for i=1,11 do
+			ManaArray[i] = Zorlen_HealingTouch_Mana[i]
+			MinHealArray[i] = Zorlen_HealingTouch_MinHeal[i]
+			MaxHealArray[i] = Zorlen_HealingTouch_MaxHeal[i]
+			TimeArray[i] = Zorlen_HealingTouch_Time[i]
+		end
 		if Zorlen_HasTalent(LOCALIZATION_ZORLEN.ImprovedHealingTouch) then
 			local TimeReduction = (Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.ImprovedHealingTouch) / 10)
 			for i=1,11 do
 				TimeArray[i] = (TimeArray[i] - TimeReduction)
-			end		
+			end
 		end
 		if Zorlen_HasTalent(LOCALIZATION_ZORLEN.TranquilSpirit) then
 			local ManaReduction = 1 - (Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.TranquilSpirit) * .02)
 			for i=1,11 do
 				ManaArray[i] = (ManaArray[i] * ManaReduction) + 1
-			end		
+			end
 		end
 		if Zorlen_HasTalent(LOCALIZATION_ZORLEN.GiftofNature) then
 			local HealImproved = 1 + (Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.GiftofNature) * .02)
@@ -1041,7 +1067,7 @@ function castHealingTouch(Mode, RankAdj, unit)
 			local ManaReduction = 1 - (Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.Moonglow) * .03)
 			for i=1,11 do
 				ManaArray[i] = (ManaArray[i] * ManaReduction) + 1
-			end		
+			end
 		end
 		return Zorlen_CastHealingSpell(SpellName, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, unit, SpellButton)
 	end
@@ -1166,11 +1192,17 @@ function castRegrowth(Mode, RankAdj, unit)
 		end
 		local unitname = UnitName(TargetID)
 		if not Zorlen_IsTimer(SpellName, unitname, "InternalZorlenSpellCastDelay") and not isRegrowth(TargetID) then
-			local LevelLearnedArray={12,18,24,30,36,42,48,54,60}
-			local ManaArray={120,205,280,350,420,510,615,740,880}
-			local MinHealArray={182,339,499,661,832,1057,1332,1670,2067}
-			local MaxHealArray={196,363,533,661,884,1121,1410,1766,2183}
-			local TimeArray={2,2,2,2,2,2,2,2,2}
+			local LevelLearnedArray = Zorlen_Regrowth_LevelLearned
+			local ManaArray = {}
+			local MinHealArray = {}
+			local MaxHealArray = {}
+			local TimeArray = {}
+			for i=1,9 do
+				ManaArray[i] = Zorlen_Regrowth_Mana[i]
+				MinHealArray[i] = Zorlen_Regrowth_MinHeal[i]
+				MaxHealArray[i] = Zorlen_Regrowth_MaxHeal[i]
+				TimeArray[i] = Zorlen_Regrowth_Time[i]
+			end
 			if Zorlen_HasTalent(LOCALIZATION_ZORLEN.GiftofNature) then
 				local HealImproved = 1 + (Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.GiftofNature) * .02)
 				for i=1,9 do
@@ -1182,7 +1214,7 @@ function castRegrowth(Mode, RankAdj, unit)
 				local ManaReduction = 1 - (Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.Moonglow) * .03)
 				for i=1,9 do
 					ManaArray[i] = (ManaArray[i] * ManaReduction) + 1
-				end		
+				end
 			end
 			return Zorlen_CastHealingSpell(SpellName, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, TargetID, SpellButton)
 		else
@@ -1300,11 +1332,16 @@ function castRejuvenation(Mode, RankAdj, unit)
 			TargetID = "player"
 		end
 		if not isRejuvenation(TargetID) then
-			local LevelLearnedArray={4,10,16,22,28,34,40,46,52,58,60}
-			local ManaArray={25,40,75,105,135,160,195,235,280,335,360}
-			local MinHealArray={32,56,116,180,244,304,388,488,608,756,888}
-			local MaxHealArray={32,56,116,180,244,304,388,488,608,756,888}
-			local TimeArray={0,0,0,0,0,0,0,0,0,0,0}
+			local LevelLearnedArray = Zorlen_Rejuvenation_LevelLearned
+			local TimeArray = Zorlen_Rejuvenation_Time
+			local ManaArray = {}
+			local MinHealArray = {}
+			local MaxHealArray = {}
+			for i=1,11 do
+				ManaArray[i] = Zorlen_Rejuvenation_Mana[i]
+				MinHealArray[i] = Zorlen_Rejuvenation_MinHeal[i]
+				MaxHealArray[i] = Zorlen_Rejuvenation_MaxHeal[i]
+			end
 			local HealImproved = 1
 			if Zorlen_HasTalent(LOCALIZATION_ZORLEN.GiftofNature) then
 				HealImproved = HealImproved + (Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.GiftofNature) * .02)
@@ -1322,7 +1359,7 @@ function castRejuvenation(Mode, RankAdj, unit)
 				local ManaReduction = 1 - (Zorlen_GetTalentRank(LOCALIZATION_ZORLEN.Moonglow) * .03)
 				for i=1,11 do
 					ManaArray[i] = (ManaArray[i] * ManaReduction) + 1
-				end		
+				end
 			end
 			return Zorlen_CastHealingSpell(SpellName, ManaArray, MinHealArray, MaxHealArray, TimeArray, LevelLearnedArray, Mode, RankAdj, TargetID, SpellButton)
 		else

@@ -26,13 +26,13 @@ local function GetPetActionCost(slot, spellName)
   for i = 2, lineCount do
     local text = getglobal("ZORLEN_TooltipTextLeft"..i):GetText()
     if text then
-      local mana = string.match(text, "(%d+)%s+" .. LOCALIZATION_ZORLEN.Mana)
+      local _, _, mana = string.find(text, "(%d+)%s+" .. LOCALIZATION_ZORLEN.Mana)
       if mana then
         PetActionCostDict[spellName] = { type = "MANA", cost = tonumber(mana) }
         return "MANA", tonumber(mana)
       end
 
-      local focus = string.match(text, "(%d+)%s+" .. LOCALIZATION_ZORLEN.Focus)
+      local _, _, focus = string.find(text, "(%d+)%s+" .. LOCALIZATION_ZORLEN.Focus)
       if focus then
         PetActionCostDict[spellName] = { type = "FOCUS", cost = tonumber(focus) }
         return "FOCUS", tonumber(focus)

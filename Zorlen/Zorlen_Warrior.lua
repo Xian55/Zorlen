@@ -202,6 +202,16 @@ end
 if not Zorlen_isCurrentClassWarrior then return end
 
 
+-- Cached ".Any" button lookup keys to avoid repeated string concatenation
+local ChargeAny = LOCALIZATION_ZORLEN.Charge..".Any"
+local InterceptAny = LOCALIZATION_ZORLEN.Intercept..".Any"
+local RendAny = LOCALIZATION_ZORLEN.Rend..".Any"
+local HamstringAny = LOCALIZATION_ZORLEN.Hamstring..".Any"
+local SunderArmorAny = LOCALIZATION_ZORLEN.SunderArmor..".Any"
+local OverpowerAny = LOCALIZATION_ZORLEN.Overpower..".Any"
+local RevengeAny = LOCALIZATION_ZORLEN.Revenge..".Any"
+
+
 
 
 
@@ -263,7 +273,7 @@ end
 function Zorlen_Warrior_OnUpdate(TimerRunDown)
 	if TimerRunDown then
 		if Zorlen_IsTimer("CastChargeDelay", nil, "InternalZorlenMiscTimer") then
-			if Zorlen_Button[LOCALIZATION_ZORLEN.Charge..".Any"] and IsActionInRange(Zorlen_Button[LOCALIZATION_ZORLEN.Charge..".Any"]) == 0 then
+			if Zorlen_Button[ChargeAny] and IsActionInRange(Zorlen_Button[ChargeAny]) == 0 then
 				Zorlen_ClearTimer("CastChargeDelay", nil, "InternalZorlenMiscTimer")
 			end
 		end
@@ -355,18 +365,18 @@ function castUnlimitedSunderArmor(test)
 end
 
 function castSunderArmor(RemainingDurationCastTime, test)
+	RemainingDurationCastTime = RemainingDurationCastTime or 10
+	if Zorlen_GetTimer(LOCALIZATION_ZORLEN.SunderArmor, nil, "InternalZorlenSpellTimers") > RemainingDurationCastTime and isSunderFull() then
+		return false
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.SunderArmor
 	z.DebuffImmune = Zorlen_IsTimer(z.SpellName, "immune", "InternalZorlenMiscTimer")
-	RemainingDurationCastTime = RemainingDurationCastTime or 10
-	if Zorlen_GetTimer(z.SpellName, nil, "InternalZorlenSpellTimers") <= RemainingDurationCastTime or not isSunderFull() then
-		if not Zorlen_Button[z.SpellName] then
-			z.ManaNeeded = Zorlen_SunderArmorRageCost()
-		end
-		return Zorlen_CastCommonRegisteredSpell(z)
+	if not Zorlen_Button[z.SpellName] then
+		z.ManaNeeded = Zorlen_SunderArmorRageCost()
 	end
-	return false
+	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 
@@ -584,49 +594,49 @@ end
 
 
 function castBattleStance(test)
+	if Zorlen_CheckWarriorStance(LOCALIZATION_ZORLEN.BattleStance) then
+		return false
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.BattleStance
 	z.EnemyTargetNotNeeded = 1
-	if Zorlen_CheckWarriorStance(z.SpellName) then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castDefensiveStance(test)
+	if Zorlen_CheckWarriorStance(LOCALIZATION_ZORLEN.DefensiveStance) then
+		return false
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.DefensiveStance
 	z.EnemyTargetNotNeeded = 1
-	if Zorlen_CheckWarriorStance(z.SpellName) then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castBerserkerStance(test)
+	if Zorlen_CheckWarriorStance(LOCALIZATION_ZORLEN.BerserkerStance) then
+		return false
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.BerserkerStance
 	z.EnemyTargetNotNeeded = 1
-	if Zorlen_CheckWarriorStance(z.SpellName) then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 
 function castMortalStrike(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.MortalStrike
-	z.ManaNeeded = 30
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.MortalStrike] then
 		if not Zorlen_isMainHandEquipped() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.MortalStrike
+	z.ManaNeeded = 30
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
@@ -639,49 +649,46 @@ function castBloodthirst(test)
 end
 
 function castShieldSlam(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.ShieldSlam
-	z.ManaNeeded = 20
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.ShieldSlam] then
 		if not Zorlen_isShieldEquipped() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.ShieldSlam
+	z.ManaNeeded = 20
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 
 function castConcussionBlow(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.ConcussionBlow
-	z.ManaNeeded = 15
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.ConcussionBlow] then
 		if not Zorlen_isMainHandEquipped() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.ConcussionBlow
+	z.ManaNeeded = 15
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castCharge(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.Charge
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Charge] then
 		if not isBattleStance() or Zorlen_inCombat() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.Charge
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castTaunt(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.Taunt
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Taunt] then
 		if not isDefensiveStance() then
 			return false
 		end
@@ -689,14 +696,14 @@ function castTaunt(test)
 	if not Zorlen_TargetIsEnemyTargetingFriendButNotYou() then
 		return false
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.Taunt
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castMockingBlow(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.MockingBlow
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.MockingBlow] then
 		if not isBattleStance() then
 			return false
 		end
@@ -704,67 +711,66 @@ function castMockingBlow(test)
 	if not Zorlen_TargetIsEnemyTargetingFriendButNotYou() then
 		return false
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.MockingBlow
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castIntercept(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.Intercept
-	z.ManaNeeded = 10
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Intercept] then
 		if not isBerserkerStance() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.Intercept
+	z.ManaNeeded = 10
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castOverpower(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.Overpower
-	z.ManaNeeded = 5
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Overpower] then
 		if not isBattleStance() or not Zorlen_isMainHandEquipped() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.Overpower
+	z.ManaNeeded = 5
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castRevenge(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.Revenge
-	z.ManaNeeded = 5
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Revenge] then
 		if not isDefensiveStance() or not Zorlen_isMainHandEquipped() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.Revenge
+	z.ManaNeeded = 5
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castCleave(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.Cleave
-	z.ManaNeeded = 20
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Cleave] then
 		if not Zorlen_isMainHandEquipped() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.Cleave
+	z.ManaNeeded = 20
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castWhirlwind(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.Whirlwind
-	z.ManaNeeded = 25
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Whirlwind] then
 		if not isBerserkerStance() or not Zorlen_isMainHandEquipped() then
 			return false
 		end
@@ -772,44 +778,44 @@ function castWhirlwind(test)
 	if not CheckInteractDistance("target", 3) then
 		return false
 	end
-	if Zorlen_Button[LOCALIZATION_ZORLEN.Charge..".Any"] then
+	if Zorlen_Button[ChargeAny] then
 		if Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Charge) then
 			return false
 		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.Intercept..".Any"] then
+	elseif Zorlen_Button[InterceptAny] then
 		if Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Intercept) then
 			return false
 		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.Rend..".Any"] then
+	elseif Zorlen_Button[RendAny] then
 		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Rend) then
 			return false
 		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.Hamstring..".Any"] then
+	elseif Zorlen_Button[HamstringAny] then
 		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Hamstring) then
 			return false
 		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.SunderArmor..".Any"] then
+	elseif Zorlen_Button[SunderArmorAny] then
 		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.SunderArmor) then
 			return false
 		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.Overpower..".Any"] then
+	elseif Zorlen_Button[OverpowerAny] then
 		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Overpower) then
 			return false
 		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.Revenge..".Any"] then
+	elseif Zorlen_Button[RevengeAny] then
 		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Revenge) then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.Whirlwind
+	z.ManaNeeded = 25
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castSweepingStrikes(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.SweepingStrikes
-	z.ManaNeeded = 30
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.SweepingStrikes] then
 		if not isBattleStance() then
 			return false
 		end
@@ -817,148 +823,151 @@ function castSweepingStrikes(test)
 	if not Zorlen_isMainHandEquipped() then
 		return false
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.SweepingStrikes
+	z.ManaNeeded = 30
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castRend(test)
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Rend] then
+		if isBerserkerStance() or not Zorlen_isMainHandEquipped() then
+			return false
+		end
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Rend
 	z.DebuffName = z.SpellName
 	z.DebuffImmune = Zorlen_IsTimer(z.SpellName, "immune", "InternalZorlenMiscTimer")
 	z.ManaNeeded = 10
-	if not Zorlen_Button[z.SpellName] then
-		if isBerserkerStance() or not Zorlen_isMainHandEquipped() then
-			return false
-		end
-	end
 	z.DebuffTimer = 1
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castDisarm(test)
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Disarm] then
+		if not isDefensiveStance() then
+			return false
+		end
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Disarm
 	z.DebuffName = z.SpellName
 	z.DebuffImmune = Zorlen_DisarmSpellCastImmune
 	z.ManaNeeded = 20
-	if not Zorlen_Button[z.SpellName] then
-		if not isDefensiveStance() then
-			return false
-		end
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castHamstring(test)
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Hamstring] then
+		if isDefensiveStance() or not Zorlen_isMainHandEquipped() then
+			return false
+		end
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Hamstring
 	z.DebuffName = z.SpellName
 	z.DebuffImmune = Zorlen_IsTimer(z.SpellName, "immune", "InternalZorlenMiscTimer")
 	z.ManaNeeded = 10
-	if not Zorlen_Button[z.SpellName] then
-		if isDefensiveStance() or not Zorlen_isMainHandEquipped() then
-			return false
-		end
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castExecute(test)
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Execute] then
+		if isDefensiveStance() or not Zorlen_TargetIsDieingEnemy() or not Zorlen_isMainHandEquipped() then
+			return false
+		end
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.Execute
 	if not Zorlen_Button[z.SpellName] then
-		if isDefensiveStance() or not Zorlen_TargetIsDieingEnemy() or not Zorlen_isMainHandEquipped() then
-			return false
-		end
 		z.ManaNeeded = Zorlen_ExecuteRageCost()
 	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castThunderClap(test)
+	if not CheckInteractDistance("target", 3) then
+		return false
+	end
+	if Zorlen_Button[ChargeAny] then
+		if Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Charge) then
+			return false
+		end
+	elseif Zorlen_Button[InterceptAny] then
+		if Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Intercept) then
+			return false
+		end
+	elseif Zorlen_Button[RendAny] then
+		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Rend) then
+			return false
+		end
+	elseif Zorlen_Button[HamstringAny] then
+		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Hamstring) then
+			return false
+		end
+	elseif Zorlen_Button[SunderArmorAny] then
+		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.SunderArmor) then
+			return false
+		end
+	elseif Zorlen_Button[OverpowerAny] then
+		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Overpower) then
+			return false
+		end
+	elseif Zorlen_Button[RevengeAny] then
+		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Revenge) then
+			return false
+		end
+	end
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.ThunderClap] then
+		if not isBattleStance() then
+			return false
+		end
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.ThunderClap
 	z.DebuffName = z.SpellName
 	z.NoRangeCheck = 1
-	if not CheckInteractDistance("target", 3) then
-		return false
-	end
-	if Zorlen_Button[LOCALIZATION_ZORLEN.Charge..".Any"] then
-		if Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Charge) then
-			return false
-		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.Intercept..".Any"] then
-		if Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Intercept) then
-			return false
-		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.Rend..".Any"] then
-		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Rend) then
-			return false
-		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.Hamstring..".Any"] then
-		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Hamstring) then
-			return false
-		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.SunderArmor..".Any"] then
-		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.SunderArmor) then
-			return false
-		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.Overpower..".Any"] then
-		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Overpower) then
-			return false
-		end
-	elseif Zorlen_Button[LOCALIZATION_ZORLEN.Revenge..".Any"] then
-		if not Zorlen_isActionInRangeBySpellName(LOCALIZATION_ZORLEN.Revenge) then
-			return false
-		end
-	end
 	if not Zorlen_Button[z.SpellName] then
-		if not isBattleStance() then
-			return false
-		end
 		z.ManaNeeded = Zorlen_ThunderClapRageCost()
 	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castShieldBash(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.ShieldBash
-	z.ManaNeeded = 10
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.ShieldBash] then
 		if isBerserkerStance() or not Zorlen_isShieldEquipped() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.ShieldBash
+	z.ManaNeeded = 10
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castPummel(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.Pummel
-	z.ManaNeeded = 10
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.Pummel] then
 		if not isBerserkerStance() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.Pummel
+	z.ManaNeeded = 10
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castShieldBlock(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.ShieldBlock
-	z.ManaNeeded = 10
-	z.BuffName = z.SpellName
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.ShieldBlock] then
 		if not isDefensiveStance() or not Zorlen_isShieldEquipped() then
 			return false
 		end
@@ -966,23 +975,33 @@ function castShieldBlock(test)
 	if not Zorlen_TargetIsEnemyTargetingYou() then
 		return false
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.ShieldBlock
+	z.ManaNeeded = 10
+	z.BuffName = z.SpellName
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castHeroicStrike(test)
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.HeroicStrike] then
+		if not Zorlen_isMainHandEquipped() then
+			return false
+		end
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.HeroicStrike
 	if not Zorlen_Button[z.SpellName] then
-		if not Zorlen_isMainHandEquipped() then
-			return false
-		end
 		z.ManaNeeded = Zorlen_HeroicStrikeRageCost()
 	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castDemoralizingShout(test)
+	if not CheckInteractDistance("target", 3) then
+		return false
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.DemoralizingShout
@@ -990,13 +1009,13 @@ function castDemoralizingShout(test)
 	z.DebuffImmune = Zorlen_DemoSpellCastImmune
 	z.ManaNeeded = 10
 	z.NoRangeCheck = 1
-	if not CheckInteractDistance("target", 3) then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
 function castPiercingHowl(test)
+	if not CheckInteractDistance("target", 3) then
+		return false
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.PiercingHowl
@@ -1004,9 +1023,6 @@ function castPiercingHowl(test)
 	z.DebuffImmune = Zorlen_PiercingHowlSpellCastImmune
 	z.ManaNeeded = 10
 	z.NoRangeCheck = 1
-	if not CheckInteractDistance("target", 3) then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
@@ -1021,15 +1037,15 @@ function castBattleShout(test)
 end
 
 function castBerserkerRage(test)
-	local z = {}
-	z.Test = test
-	z.SpellName = LOCALIZATION_ZORLEN.BerserkerRage
-	z.EnemyTargetNotNeeded = 1
-	if not Zorlen_Button[z.SpellName] then
+	if not Zorlen_Button[LOCALIZATION_ZORLEN.BerserkerRage] then
 		if not isBerserkerStance() then
 			return false
 		end
 	end
+	local z = {}
+	z.Test = test
+	z.SpellName = LOCALIZATION_ZORLEN.BerserkerRage
+	z.EnemyTargetNotNeeded = 1
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
@@ -1050,13 +1066,13 @@ function castDeathWish(test)
 end
 
 function castLastStand(test)
+	if Zorlen_HealthDamagePercent("player") < 30 then
+		return false
+	end
 	local z = {}
 	z.Test = test
 	z.SpellName = LOCALIZATION_ZORLEN.LastStand
 	z.EnemyTargetNotNeeded = 1
-	if Zorlen_HealthDamagePercent("player") < 30 then
-		return false
-	end
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
