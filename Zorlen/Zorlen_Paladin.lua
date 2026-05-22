@@ -295,3 +295,7 @@ function castAutoBlessing()
 
   return false
 end
+
+function canCrusaderStrike()
+	return Zorlen_IsSpellKnown(LOCALIZATION_ZORLEN.CrusaderStrike)
+end
