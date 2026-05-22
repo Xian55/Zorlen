@@ -395,6 +395,10 @@ function castAmbush(test)
 	return Zorlen_CastCommonRegisteredSpell(z)
 end
 
+function canAmbush()
+	return Zorlen_IsSpellKnown(LOCALIZATION_ZORLEN.Ambush)
+end
+
 --Added by charroux
 function castKidneyShot(ComboPointsNumber, test)
 	if not isComboPoints(ComboPointsNumber) or not Zorlen_isMainHandEquipped() then
